@@ -17,7 +17,7 @@ import {
   upsertSocialLinkAction,
 } from "./actions";
 import { requireAdmin } from "@/lib/admin-auth";
-import { getPortfolioData } from "@/lib/portfolio";
+import { getPortfolioData, type PortfolioData } from "@/lib/portfolio";
 
 function AdminCard({
   title,
@@ -50,7 +50,7 @@ function HiddenIds({ id, profileId }: { id?: string; profileId: string }) {
 
 export default async function AdminPage() {
   await requireAdmin();
-  const profile = await getPortfolioData();
+  const profile: PortfolioData | null = await getPortfolioData();
 
   if (!profile) {
     return (
@@ -171,7 +171,7 @@ export default async function AdminPage() {
 
         <AdminCard title="Services" description="Manage the service cards and their order.">
           <div className="row g-4">
-            {profile.services.map((service) => (
+            {profile.services.map((service: PortfolioData["services"][number]) => (
               <div className="col-12" key={service.id}>
                 <form action={upsertServiceAction} className="admin-item-form row g-3 border border-light border-opacity-10 rounded-4 p-3">
                   <HiddenIds id={service.id} profileId={profile.id} />
