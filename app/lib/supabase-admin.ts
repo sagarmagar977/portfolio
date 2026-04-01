@@ -1,21 +1,23 @@
 import { randomUUID } from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-if (!supabaseUrl || !serviceRoleKey) {
-  throw new Error("Supabase Storage environment variables are not set.");
-}
-
 const bucketCache = new Set<string>();
 
-const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey, {
-  auth: {
-    persistSession: false,
-    autoRefreshToken: false,
-  },
-});
+function getSupabaseAdmin() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!supabaseUrl || !serviceRoleKey) {
+    throw new Error("Supabase Storage environment variables are not set.");
+  }
+
+  return createClient(supabaseUrl, serviceRoleKey, {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+    },
+  });
+}
 
 function sanitizeFileName(fileName: string) {
   return fileName
@@ -30,6 +32,7 @@ async function ensureBucket(bucket: string) {
     return;
   }
 
+  const supabaseAdmin = getSupabaseAdmin();
   const { data: existingBuckets, error: listError } = await supabaseAdmin.storage.listBuckets();
 
   if (listError) {
@@ -58,6 +61,7 @@ export async function uploadFileToSupabase(options: {
   file: File;
 }) {
   const { bucket, folder, file } = options;
+  const supabaseAdmin = getSupabaseAdmin();
 
   await ensureBucket(bucket);
 
