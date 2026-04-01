@@ -202,7 +202,7 @@ export default async function AdminPage() {
 
         <AdminCard title="Projects" description="Update the project cards shown in the work section.">
           <div className="row g-4">
-            {profile.projects.map((project) => (
+            {profile.projects.map((project: PortfolioData["projects"][number]) => (
               <div className="col-12" key={project.id}>
                 <form action={upsertProjectAction} className="admin-item-form row g-3 border border-light border-opacity-10 rounded-4 p-3" encType="multipart/form-data">
                   <HiddenIds id={project.id} profileId={profile.id} />
@@ -237,7 +237,7 @@ export default async function AdminPage() {
 
         <AdminCard title="Beats" description="Manage the music items shown in the work section.">
           <div className="row g-4">
-            {profile.beats.map((beat) => (
+            {profile.beats.map((beat: PortfolioData["beats"][number]) => (
               <div className="col-12" key={beat.id}>
                 <form action={upsertBeatAction} className="admin-item-form row g-3 border border-light border-opacity-10 rounded-4 p-3" encType="multipart/form-data">
                   <HiddenIds id={beat.id} profileId={profile.id} />
@@ -274,7 +274,7 @@ export default async function AdminPage() {
 
         <AdminCard title="Education" description="Manage education timeline entries.">
           <div className="row g-4">
-            {profile.educations.map((education) => (
+            {profile.educations.map((education: PortfolioData["educations"][number]) => (
               <div className="col-12" key={education.id}>
                 <form action={upsertEducationAction} className="admin-item-form row g-3 border border-light border-opacity-10 rounded-4 p-3">
                   <HiddenIds id={education.id} profileId={profile.id} />
@@ -307,7 +307,7 @@ export default async function AdminPage() {
 
         <AdminCard title="Experience" description="Manage experience timeline entries.">
           <div className="row g-4">
-            {profile.experiences.map((experience) => (
+            {profile.experiences.map((experience: PortfolioData["experiences"][number]) => (
               <div className="col-12" key={experience.id}>
                 <form action={upsertExperienceAction} className="admin-item-form row g-3 border border-light border-opacity-10 rounded-4 p-3">
                   <HiddenIds id={experience.id} profileId={profile.id} />
@@ -340,7 +340,7 @@ export default async function AdminPage() {
 
         <AdminCard title="Social Links" description="Update footer social links.">
           <div className="row g-4">
-            {profile.socialLinks.map((socialLink) => (
+            {profile.socialLinks.map((socialLink: PortfolioData["socialLinks"][number]) => (
               <div className="col-12" key={socialLink.id}>
                 <form action={upsertSocialLinkAction} className="admin-item-form row g-3 border border-light border-opacity-10 rounded-4 p-3">
                   <HiddenIds id={socialLink.id} profileId={profile.id} />
