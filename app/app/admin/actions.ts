@@ -3,7 +3,10 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { uploadFileToSupabase } from "@/lib/supabase-admin";
+import {
+  deleteStorageFileByPublicUrl,
+  uploadFileToSupabase,
+} from "@/lib/supabase-admin";
 import {
   clearAdminSession,
   createAdminSession,
@@ -50,6 +53,14 @@ async function uploadIfPresent(options: {
   });
 }
 
+async function deleteIfChanged(oldUrl: string | null | undefined, nextUrl: string | null | undefined) {
+  if (!oldUrl || !nextUrl || oldUrl === nextUrl) {
+    return;
+  }
+
+  await deleteStorageFileByPublicUrl(oldUrl);
+}
+
 async function requireAuthenticatedAction() {
   const authenticated = await isAdminAuthenticated();
 
@@ -84,6 +95,11 @@ export async function logoutAction() {
 export async function updateProfileAction(formData: FormData) {
   await requireAuthenticatedAction();
   const profileId = getString(formData, "profileId");
+  const existingProfile = await prisma.profile.findUnique({ where: { id: profileId } });
+
+  if (!existingProfile) {
+    redirect("/admin");
+  }
 
   const uploadedProfileImageUrl = await uploadIfPresent({
     formData,
@@ -99,6 +115,9 @@ export async function updateProfileAction(formData: FormData) {
     folder: "files",
   });
 
+  const nextProfileImageUrl = uploadedProfileImageUrl ?? getNullableString(formData, "profileImageUrl");
+  const nextCvFileUrl = uploadedCvFileUrl ?? getNullableString(formData, "cvFileUrl");
+
   await prisma.profile.update({
     where: { id: profileId },
     data: {
@@ -108,12 +127,15 @@ export async function updateProfileAction(formData: FormData) {
       heroTitleSuffix: getNullableString(formData, "heroTitleSuffix"),
       heroDescription: getNullableString(formData, "heroDescription"),
       location: getNullableString(formData, "location"),
-      profileImageUrl: uploadedProfileImageUrl ?? getNullableString(formData, "profileImageUrl"),
-      cvFileUrl: uploadedCvFileUrl ?? getNullableString(formData, "cvFileUrl"),
+      profileImageUrl: nextProfileImageUrl,
+      cvFileUrl: nextCvFileUrl,
       aboutSectionTitle: getNullableString(formData, "aboutSectionTitle"),
       footerCreditText: getNullableString(formData, "footerCreditText"),
     },
   });
+
+  await deleteIfChanged(existingProfile.profileImageUrl, nextProfileImageUrl);
+  await deleteIfChanged(existingProfile.cvFileUrl, nextCvFileUrl);
 
   refreshPortfolio();
 }
@@ -132,17 +154,9 @@ export async function updateContactInfoAction(formData: FormData) {
   };
 
   if (contactInfoId) {
-    await prisma.contactInfo.update({
-      where: { id: contactInfoId },
-      data,
-    });
+    await prisma.contactInfo.update({ where: { id: contactInfoId }, data });
   } else {
-    await prisma.contactInfo.create({
-      data: {
-        profileId,
-        ...data,
-      },
-    });
+    await prisma.contactInfo.create({ data: { profileId, ...data } });
   }
 
   refreshPortfolio();
@@ -178,6 +192,7 @@ export async function upsertProjectAction(formData: FormData) {
   await requireAuthenticatedAction();
   const id = getString(formData, "id");
   const profileId = getString(formData, "profileId");
+  const existingProject = id ? await prisma.project.findUnique({ where: { id } }) : null;
 
   const uploadedImageUrl = await uploadIfPresent({
     formData,
@@ -186,16 +201,18 @@ export async function upsertProjectAction(formData: FormData) {
     folder: "images",
   });
 
+  const nextImageUrl = uploadedImageUrl ?? getNullableString(formData, "imageUrl");
   const data = {
     title: getString(formData, "title"),
     description: getString(formData, "description"),
-    imageUrl: uploadedImageUrl ?? getNullableString(formData, "imageUrl"),
+    imageUrl: nextImageUrl,
     liveUrl: getNullableString(formData, "liveUrl"),
     sortOrder: getNumber(formData, "sortOrder"),
   };
 
   if (id) {
     await prisma.project.update({ where: { id }, data });
+    await deleteIfChanged(existingProject?.imageUrl, nextImageUrl);
   } else {
     await prisma.project.create({ data: { profileId, ...data } });
   }
@@ -205,7 +222,10 @@ export async function upsertProjectAction(formData: FormData) {
 
 export async function deleteProjectAction(formData: FormData) {
   await requireAuthenticatedAction();
-  await prisma.project.delete({ where: { id: getString(formData, "id") } });
+  const id = getString(formData, "id");
+  const project = await prisma.project.findUnique({ where: { id } });
+  await prisma.project.delete({ where: { id } });
+  await deleteStorageFileByPublicUrl(project?.imageUrl);
   refreshPortfolio();
 }
 
@@ -213,6 +233,7 @@ export async function upsertBeatAction(formData: FormData) {
   await requireAuthenticatedAction();
   const id = getString(formData, "id");
   const profileId = getString(formData, "profileId");
+  const existingBeat = id ? await prisma.beat.findUnique({ where: { id } }) : null;
 
   const uploadedCoverImageUrl = await uploadIfPresent({
     formData,
@@ -228,16 +249,20 @@ export async function upsertBeatAction(formData: FormData) {
     folder: "audio",
   });
 
+  const nextCoverImageUrl = uploadedCoverImageUrl ?? getNullableString(formData, "coverImageUrl");
+  const nextAudioUrl = uploadedAudioUrl ?? getNullableString(formData, "audioUrl");
   const data = {
     title: getString(formData, "title"),
     description: getString(formData, "description"),
-    coverImageUrl: uploadedCoverImageUrl ?? getNullableString(formData, "coverImageUrl"),
-    audioUrl: uploadedAudioUrl ?? getNullableString(formData, "audioUrl"),
+    coverImageUrl: nextCoverImageUrl,
+    audioUrl: nextAudioUrl,
     sortOrder: getNumber(formData, "sortOrder"),
   };
 
   if (id) {
     await prisma.beat.update({ where: { id }, data });
+    await deleteIfChanged(existingBeat?.coverImageUrl, nextCoverImageUrl);
+    await deleteIfChanged(existingBeat?.audioUrl, nextAudioUrl);
   } else {
     await prisma.beat.create({ data: { profileId, ...data } });
   }
@@ -247,7 +272,11 @@ export async function upsertBeatAction(formData: FormData) {
 
 export async function deleteBeatAction(formData: FormData) {
   await requireAuthenticatedAction();
-  await prisma.beat.delete({ where: { id: getString(formData, "id") } });
+  const id = getString(formData, "id");
+  const beat = await prisma.beat.findUnique({ where: { id } });
+  await prisma.beat.delete({ where: { id } });
+  await deleteStorageFileByPublicUrl(beat?.coverImageUrl);
+  await deleteStorageFileByPublicUrl(beat?.audioUrl);
   refreshPortfolio();
 }
 
