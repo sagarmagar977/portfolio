@@ -1,31 +1,9 @@
-import { prisma } from "@/lib/prisma";
+import { getPortfolioData, type PortfolioData } from "@/lib/portfolio";
 
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
-  const profile = await prisma.profile.findFirst({
-    include: {
-      services: {
-        orderBy: { sortOrder: "asc" },
-      },
-      projects: {
-        orderBy: { sortOrder: "asc" },
-      },
-      beats: {
-        orderBy: { sortOrder: "asc" },
-      },
-      educations: {
-        orderBy: { sortOrder: "asc" },
-      },
-      experiences: {
-        orderBy: { sortOrder: "asc" },
-      },
-      socialLinks: {
-        orderBy: { sortOrder: "asc" },
-      },
-      contactInfo: true,
-    },
-  });
+  const profile: PortfolioData | null = await getPortfolioData();
 
   if (!profile) {
     return (
@@ -111,7 +89,7 @@ export default async function Home() {
               </div>
             </div>
             <div className="row gy-4">
-              {profile.services.map((service, index) => (
+              {profile.services.map((service: PortfolioData["services"][number], index) => (
                 <div
                   key={service.id}
                   className="col-md-4"
@@ -140,7 +118,7 @@ export default async function Home() {
               </div>
             </div>
             <div className="row gy-4">
-              {profile.projects.map((project) => (
+              {profile.projects.map((project: PortfolioData["projects"][number]) => (
                 <div key={project.id} className="col-md-6" data-aos="fade-up">
                   <div className="card-custom rounded-4 bg-base shadow-effect">
                     <div className="card-custom-image rounded-4">
@@ -159,7 +137,7 @@ export default async function Home() {
                 </div>
               ))}
 
-              {profile.beats.map((beat) => (
+              {profile.beats.map((beat: PortfolioData["beats"][number]) => (
                 <div key={beat.id} className="col-md-6" data-aos="fade-up">
                   <div className="card-custom rounded-4 bg-base shadow-effect">
                     <div className="card-custom-image rounded-4">
@@ -195,7 +173,7 @@ export default async function Home() {
               <div className="col-lg-6">
                 <h3 className="mb-4" data-aos="fade-up" data-aos-delay="300">Education</h3>
                 <div className="row gy-4">
-                  {profile.educations.map((education) => (
+                  {profile.educations.map((education: PortfolioData["educations"][number]) => (
                     <div key={education.id} className="col-12" data-aos="fade-up" data-aos-delay="600">
                       <div className="bg-base p-4 rounded-4 shadow-effect">
                         <h4>{education.degree}</h4>
@@ -210,7 +188,7 @@ export default async function Home() {
               <div className="col-lg-6">
                 <h3 className="mb-4" data-aos="fade-up" data-aos-delay="300">Experiance</h3>
                 <div className="row gy-4">
-                  {profile.experiences.map((experience) => (
+                  {profile.experiences.map((experience: PortfolioData["experiences"][number]) => (
                     <div key={experience.id} className="col-12" data-aos="fade-up" data-aos-delay="600">
                       <div className="bg-base p-4 rounded-4 shadow-effect">
                         <h4>{experience.role}</h4>
@@ -275,7 +253,7 @@ export default async function Home() {
               </div>
               <div className="col-auto">
                 <div className="social-icons">
-                  {profile.socialLinks.map((socialLink) => (
+                  {profile.socialLinks.map((socialLink: PortfolioData["socialLinks"][number]) => (
                     <a
                       key={socialLink.id}
                       href={socialLink.url}
