@@ -8,7 +8,7 @@
   --color-brand: #e0f780;
   --color-brand2: #deff58;
   --sidbar-width: 240px;
-  --font-base: var(--font-bai-jamjuree);
+  --font-base: "Trebuchet MS", "Segoe UI", Helvetica, Arial, sans-serif;
 }
 
 html {

@@ -1,13 +1,6 @@
 import type { Metadata } from "next";
-import { Bai_Jamjuree } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
-
-const baiJamjuree = Bai_Jamjuree({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-  variable: "--font-bai-jamjuree",
-});
 
 export const metadata: Metadata = {
   title: "Sagar Thapa",
@@ -20,7 +13,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={baiJamjuree.variable}>
+    <html lang="en">
       <head>
         <link
           rel="stylesheet"
