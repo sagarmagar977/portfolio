@@ -28,7 +28,7 @@ export default function RootLayout({
           href="https://cdn.jsdelivr.net/npm/line-awesome@1.3.0/dist/line-awesome/css/line-awesome.min.css"
         />
       </head>
-      <body data-bs-spy="scroll" data-bs-target=".navbar" data-bs-smooth-scroll="true" tabIndex={0}>
+      <body tabIndex={0}>
         {children}
         <Script
           src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
@@ -56,7 +56,8 @@ export default function RootLayout({
                 const existing = window.bootstrap.ScrollSpy.getInstance(document.body);
 
                 if (existing) {
-                  existing.dispose();
+                  existing.refresh();
+                  return;
                 }
 
                 new window.bootstrap.ScrollSpy(document.body, {
@@ -65,10 +66,15 @@ export default function RootLayout({
                 });
               }
 
-              run();
-              window.addEventListener("load", run);
-              window.addEventListener("resize", run);
-              window.addEventListener("hashchange", run);
+              if (document.readyState === "complete" || document.readyState === "interactive") {
+                run();
+              } else {
+                window.addEventListener("DOMContentLoaded", run, { once: true });
+              }
+
+              window.addEventListener("load", function refreshScrollSpy() {
+                window.bootstrap?.ScrollSpy.getInstance(document.body)?.refresh();
+              }, { once: true });
             })();
           `}
         </Script>
