@@ -249,9 +249,15 @@ audio {
   transform: scale(1.1);
 }
 
-#contact .form-control,
-.admin-panel .form-control {
+#contact .form-control {
   background-color: var(--color-base) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  color: var(--color-body) !important;
+  border-radius: 0.85rem;
+}
+
+.admin-panel .form-control {
+  background-color: var(--color-base2) !important;
   border: 1px solid rgba(255, 255, 255, 0.08) !important;
   color: var(--color-body) !important;
   border-radius: 0.85rem;
@@ -294,9 +300,7 @@ html.aos-ready [data-aos] {
 }
 
 .admin-panel {
-  background:
-    radial-gradient(circle at top left, rgba(224, 247, 128, 0.08), transparent 22%),
-    linear-gradient(180deg, rgba(2, 42, 48, 0.98), rgba(2, 42, 48, 1));
+  background-color: var(--color-base2);
 }
 
 .admin-panel .admin-intro {
