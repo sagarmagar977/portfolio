@@ -89,7 +89,7 @@ export default async function Home() {
               </div>
             </div>
             <div className="row gy-4">
-              {profile.services.map((service: PortfolioData["services"][number], index) => (
+              {profile.services.map((service: PortfolioData["services"][number], index: number) => (
                 <div
                   key={service.id}
                   className="col-md-4"
