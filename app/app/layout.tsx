@@ -38,6 +38,40 @@ export default function RootLayout({
           src="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.js"
           strategy="afterInteractive"
         />
+        <Script id="bootstrap-scrollspy-init" strategy="afterInteractive">
+          {`
+            (function initPortfolioScrollSpy() {
+              function run() {
+                if (!window.bootstrap?.ScrollSpy) {
+                  window.setTimeout(run, 100);
+                  return;
+                }
+
+                const nav = document.querySelector("#navbarNav");
+
+                if (!nav) {
+                  return;
+                }
+
+                const existing = window.bootstrap.ScrollSpy.getInstance(document.body);
+
+                if (existing) {
+                  existing.dispose();
+                }
+
+                new window.bootstrap.ScrollSpy(document.body, {
+                  target: "#navbarNav",
+                  smoothScroll: true,
+                });
+              }
+
+              run();
+              window.addEventListener("load", run);
+              window.addEventListener("resize", run);
+              window.addEventListener("hashchange", run);
+            })();
+          `}
+        </Script>
         <Script id="aos-init" strategy="afterInteractive">
           {`
             (function initPortfolioAos() {

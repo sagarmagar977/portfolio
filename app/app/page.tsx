@@ -1,4 +1,5 @@
 import { getPortfolioData, type PortfolioData } from "@/lib/portfolio";
+import { ContactForm } from "./contact-form";
 
 export const dynamic = "force-dynamic";
 
@@ -220,23 +221,7 @@ export default async function Home() {
               </div>
 
               <div className="col-lg-8" data-aos="fade-up" data-aos-delay="300">
-                <form className="row g-lg-3 gy-3">
-                  <div className="form-group col-md-6">
-                    <input type="text" className="form-control" placeholder="Enter your name" />
-                  </div>
-                  <div className="form-group col-md-6">
-                    <input type="email" className="form-control" placeholder="Enter your email" />
-                  </div>
-                  <div className="form-group col-12">
-                    <input type="text" className="form-control" placeholder="Enter subject" />
-                  </div>
-                  <div className="form-group col-12">
-                    <textarea rows={4} className="form-control" placeholder="Enter your message" />
-                  </div>
-                  <div className="form-group col-12 d-grid">
-                    <button type="submit" className="btn btn-brand">Contact me</button>
-                  </div>
-                </form>
+                <ContactForm />
               </div>
             </div>
           </div>
@@ -273,5 +258,3 @@ export default async function Home() {
     </>
   );
 }
-
-

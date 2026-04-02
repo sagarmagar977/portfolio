@@ -13,6 +13,10 @@ import {
   getAdminCredentials,
   isAdminAuthenticated,
 } from "@/lib/admin-auth";
+import {
+  getServiceOption,
+  inferServiceOptionFromTitle,
+} from "@/lib/service-options";
 
 function getString(formData: FormData, key: string) {
   const value = formData.get(key);
@@ -166,11 +170,22 @@ export async function upsertServiceAction(formData: FormData) {
   await requireAuthenticatedAction();
   const id = getString(formData, "id");
   const profileId = getString(formData, "profileId");
+  const existingService = id ? await prisma.service.findUnique({ where: { id } }) : null;
+  const selectedOption =
+    getServiceOption(getString(formData, "serviceType")) ??
+    inferServiceOptionFromTitle(existingService?.title);
+  const nextSortOrder = id
+    ? getNumber(formData, "sortOrder")
+    : ((await prisma.service.aggregate({
+        where: { profileId },
+        _max: { sortOrder: true },
+      }))._max.sortOrder ?? 0) + 1;
+
   const data = {
-    title: getString(formData, "title"),
+    title: selectedOption?.title ?? getString(formData, "title"),
     description: getString(formData, "description"),
-    iconName: getNullableString(formData, "iconName"),
-    sortOrder: getNumber(formData, "sortOrder"),
+    iconName: selectedOption?.iconName ?? getNullableString(formData, "iconName"),
+    sortOrder: nextSortOrder,
   };
 
   if (id) {
@@ -185,6 +200,54 @@ export async function upsertServiceAction(formData: FormData) {
 export async function deleteServiceAction(formData: FormData) {
   await requireAuthenticatedAction();
   await prisma.service.delete({ where: { id: getString(formData, "id") } });
+  refreshPortfolio();
+}
+
+export async function moveServiceAction(formData: FormData) {
+  await requireAuthenticatedAction();
+  const id = getString(formData, "id");
+  const direction = getString(formData, "direction");
+  const service = await prisma.service.findUnique({ where: { id } });
+
+  if (!service) {
+    refreshPortfolio();
+    return;
+  }
+
+  const services = await prisma.service.findMany({
+    where: { profileId: service.profileId },
+    orderBy: { sortOrder: "asc" },
+  });
+
+  const currentIndex = services.findIndex((item) => item.id === id);
+
+  if (currentIndex === -1) {
+    refreshPortfolio();
+    return;
+  }
+
+  const targetIndex =
+    direction === "up" ? currentIndex - 1 : direction === "down" ? currentIndex + 1 : currentIndex;
+
+  if (targetIndex < 0 || targetIndex >= services.length || targetIndex === currentIndex) {
+    refreshPortfolio();
+    return;
+  }
+
+  const currentService = services[currentIndex];
+  const targetService = services[targetIndex];
+
+  await prisma.$transaction([
+    prisma.service.update({
+      where: { id: currentService.id },
+      data: { sortOrder: targetService.sortOrder },
+    }),
+    prisma.service.update({
+      where: { id: targetService.id },
+      data: { sortOrder: currentService.sortOrder },
+    }),
+  ]);
+
   refreshPortfolio();
 }
 
@@ -207,7 +270,12 @@ export async function upsertProjectAction(formData: FormData) {
     description: getString(formData, "description"),
     imageUrl: nextImageUrl,
     liveUrl: getNullableString(formData, "liveUrl"),
-    sortOrder: getNumber(formData, "sortOrder"),
+    sortOrder: id
+      ? getNumber(formData, "sortOrder")
+      : ((await prisma.project.aggregate({
+          where: { profileId },
+          _max: { sortOrder: true },
+        }))._max.sortOrder ?? 0) + 1,
   };
 
   if (id) {
@@ -226,6 +294,54 @@ export async function deleteProjectAction(formData: FormData) {
   const project = await prisma.project.findUnique({ where: { id } });
   await prisma.project.delete({ where: { id } });
   await deleteStorageFileByPublicUrl(project?.imageUrl);
+  refreshPortfolio();
+}
+
+export async function moveProjectAction(formData: FormData) {
+  await requireAuthenticatedAction();
+  const id = getString(formData, "id");
+  const direction = getString(formData, "direction");
+  const project = await prisma.project.findUnique({ where: { id } });
+
+  if (!project) {
+    refreshPortfolio();
+    return;
+  }
+
+  const projects = await prisma.project.findMany({
+    where: { profileId: project.profileId },
+    orderBy: { sortOrder: "asc" },
+  });
+
+  const currentIndex = projects.findIndex((item) => item.id === id);
+
+  if (currentIndex === -1) {
+    refreshPortfolio();
+    return;
+  }
+
+  const targetIndex =
+    direction === "up" ? currentIndex - 1 : direction === "down" ? currentIndex + 1 : currentIndex;
+
+  if (targetIndex < 0 || targetIndex >= projects.length || targetIndex === currentIndex) {
+    refreshPortfolio();
+    return;
+  }
+
+  const currentProject = projects[currentIndex];
+  const targetProject = projects[targetIndex];
+
+  await prisma.$transaction([
+    prisma.project.update({
+      where: { id: currentProject.id },
+      data: { sortOrder: targetProject.sortOrder },
+    }),
+    prisma.project.update({
+      where: { id: targetProject.id },
+      data: { sortOrder: currentProject.sortOrder },
+    }),
+  ]);
+
   refreshPortfolio();
 }
 
@@ -256,7 +372,12 @@ export async function upsertBeatAction(formData: FormData) {
     description: getString(formData, "description"),
     coverImageUrl: nextCoverImageUrl,
     audioUrl: nextAudioUrl,
-    sortOrder: getNumber(formData, "sortOrder"),
+    sortOrder: id
+      ? getNumber(formData, "sortOrder")
+      : ((await prisma.beat.aggregate({
+          where: { profileId },
+          _max: { sortOrder: true },
+        }))._max.sortOrder ?? 0) + 1,
   };
 
   if (id) {
@@ -280,6 +401,54 @@ export async function deleteBeatAction(formData: FormData) {
   refreshPortfolio();
 }
 
+export async function moveBeatAction(formData: FormData) {
+  await requireAuthenticatedAction();
+  const id = getString(formData, "id");
+  const direction = getString(formData, "direction");
+  const beat = await prisma.beat.findUnique({ where: { id } });
+
+  if (!beat) {
+    refreshPortfolio();
+    return;
+  }
+
+  const beats = await prisma.beat.findMany({
+    where: { profileId: beat.profileId },
+    orderBy: { sortOrder: "asc" },
+  });
+
+  const currentIndex = beats.findIndex((item) => item.id === id);
+
+  if (currentIndex === -1) {
+    refreshPortfolio();
+    return;
+  }
+
+  const targetIndex =
+    direction === "up" ? currentIndex - 1 : direction === "down" ? currentIndex + 1 : currentIndex;
+
+  if (targetIndex < 0 || targetIndex >= beats.length || targetIndex === currentIndex) {
+    refreshPortfolio();
+    return;
+  }
+
+  const currentBeat = beats[currentIndex];
+  const targetBeat = beats[targetIndex];
+
+  await prisma.$transaction([
+    prisma.beat.update({
+      where: { id: currentBeat.id },
+      data: { sortOrder: targetBeat.sortOrder },
+    }),
+    prisma.beat.update({
+      where: { id: targetBeat.id },
+      data: { sortOrder: currentBeat.sortOrder },
+    }),
+  ]);
+
+  refreshPortfolio();
+}
+
 export async function upsertEducationAction(formData: FormData) {
   await requireAuthenticatedAction();
   const id = getString(formData, "id");
@@ -289,7 +458,12 @@ export async function upsertEducationAction(formData: FormData) {
     institution: getString(formData, "institution"),
     period: getString(formData, "period"),
     description: getNullableString(formData, "description"),
-    sortOrder: getNumber(formData, "sortOrder"),
+    sortOrder: id
+      ? getNumber(formData, "sortOrder")
+      : ((await prisma.education.aggregate({
+          where: { profileId },
+          _max: { sortOrder: true },
+        }))._max.sortOrder ?? 0) + 1,
   };
 
   if (id) {
@@ -307,6 +481,54 @@ export async function deleteEducationAction(formData: FormData) {
   refreshPortfolio();
 }
 
+export async function moveEducationAction(formData: FormData) {
+  await requireAuthenticatedAction();
+  const id = getString(formData, "id");
+  const direction = getString(formData, "direction");
+  const education = await prisma.education.findUnique({ where: { id } });
+
+  if (!education) {
+    refreshPortfolio();
+    return;
+  }
+
+  const educations = await prisma.education.findMany({
+    where: { profileId: education.profileId },
+    orderBy: { sortOrder: "asc" },
+  });
+
+  const currentIndex = educations.findIndex((item) => item.id === id);
+
+  if (currentIndex === -1) {
+    refreshPortfolio();
+    return;
+  }
+
+  const targetIndex =
+    direction === "up" ? currentIndex - 1 : direction === "down" ? currentIndex + 1 : currentIndex;
+
+  if (targetIndex < 0 || targetIndex >= educations.length || targetIndex === currentIndex) {
+    refreshPortfolio();
+    return;
+  }
+
+  const currentEducation = educations[currentIndex];
+  const targetEducation = educations[targetIndex];
+
+  await prisma.$transaction([
+    prisma.education.update({
+      where: { id: currentEducation.id },
+      data: { sortOrder: targetEducation.sortOrder },
+    }),
+    prisma.education.update({
+      where: { id: targetEducation.id },
+      data: { sortOrder: currentEducation.sortOrder },
+    }),
+  ]);
+
+  refreshPortfolio();
+}
+
 export async function upsertExperienceAction(formData: FormData) {
   await requireAuthenticatedAction();
   const id = getString(formData, "id");
@@ -316,7 +538,12 @@ export async function upsertExperienceAction(formData: FormData) {
     company: getString(formData, "company"),
     period: getString(formData, "period"),
     description: getNullableString(formData, "description"),
-    sortOrder: getNumber(formData, "sortOrder"),
+    sortOrder: id
+      ? getNumber(formData, "sortOrder")
+      : ((await prisma.experience.aggregate({
+          where: { profileId },
+          _max: { sortOrder: true },
+        }))._max.sortOrder ?? 0) + 1,
   };
 
   if (id) {
@@ -334,6 +561,54 @@ export async function deleteExperienceAction(formData: FormData) {
   refreshPortfolio();
 }
 
+export async function moveExperienceAction(formData: FormData) {
+  await requireAuthenticatedAction();
+  const id = getString(formData, "id");
+  const direction = getString(formData, "direction");
+  const experience = await prisma.experience.findUnique({ where: { id } });
+
+  if (!experience) {
+    refreshPortfolio();
+    return;
+  }
+
+  const experiences = await prisma.experience.findMany({
+    where: { profileId: experience.profileId },
+    orderBy: { sortOrder: "asc" },
+  });
+
+  const currentIndex = experiences.findIndex((item) => item.id === id);
+
+  if (currentIndex === -1) {
+    refreshPortfolio();
+    return;
+  }
+
+  const targetIndex =
+    direction === "up" ? currentIndex - 1 : direction === "down" ? currentIndex + 1 : currentIndex;
+
+  if (targetIndex < 0 || targetIndex >= experiences.length || targetIndex === currentIndex) {
+    refreshPortfolio();
+    return;
+  }
+
+  const currentExperience = experiences[currentIndex];
+  const targetExperience = experiences[targetIndex];
+
+  await prisma.$transaction([
+    prisma.experience.update({
+      where: { id: currentExperience.id },
+      data: { sortOrder: targetExperience.sortOrder },
+    }),
+    prisma.experience.update({
+      where: { id: targetExperience.id },
+      data: { sortOrder: currentExperience.sortOrder },
+    }),
+  ]);
+
+  refreshPortfolio();
+}
+
 export async function upsertSocialLinkAction(formData: FormData) {
   await requireAuthenticatedAction();
   const id = getString(formData, "id");
@@ -341,7 +616,12 @@ export async function upsertSocialLinkAction(formData: FormData) {
   const data = {
     platform: getString(formData, "platform"),
     url: getString(formData, "url"),
-    sortOrder: getNumber(formData, "sortOrder"),
+    sortOrder: id
+      ? getNumber(formData, "sortOrder")
+      : ((await prisma.socialLink.aggregate({
+          where: { profileId },
+          _max: { sortOrder: true },
+        }))._max.sortOrder ?? 0) + 1,
   };
 
   if (id) {
@@ -356,5 +636,53 @@ export async function upsertSocialLinkAction(formData: FormData) {
 export async function deleteSocialLinkAction(formData: FormData) {
   await requireAuthenticatedAction();
   await prisma.socialLink.delete({ where: { id: getString(formData, "id") } });
+  refreshPortfolio();
+}
+
+export async function moveSocialLinkAction(formData: FormData) {
+  await requireAuthenticatedAction();
+  const id = getString(formData, "id");
+  const direction = getString(formData, "direction");
+  const socialLink = await prisma.socialLink.findUnique({ where: { id } });
+
+  if (!socialLink) {
+    refreshPortfolio();
+    return;
+  }
+
+  const socialLinks = await prisma.socialLink.findMany({
+    where: { profileId: socialLink.profileId },
+    orderBy: { sortOrder: "asc" },
+  });
+
+  const currentIndex = socialLinks.findIndex((item) => item.id === id);
+
+  if (currentIndex === -1) {
+    refreshPortfolio();
+    return;
+  }
+
+  const targetIndex =
+    direction === "up" ? currentIndex - 1 : direction === "down" ? currentIndex + 1 : currentIndex;
+
+  if (targetIndex < 0 || targetIndex >= socialLinks.length || targetIndex === currentIndex) {
+    refreshPortfolio();
+    return;
+  }
+
+  const currentSocialLink = socialLinks[currentIndex];
+  const targetSocialLink = socialLinks[targetIndex];
+
+  await prisma.$transaction([
+    prisma.socialLink.update({
+      where: { id: currentSocialLink.id },
+      data: { sortOrder: targetSocialLink.sortOrder },
+    }),
+    prisma.socialLink.update({
+      where: { id: targetSocialLink.id },
+      data: { sortOrder: currentSocialLink.sortOrder },
+    }),
+  ]);
+
   refreshPortfolio();
 }

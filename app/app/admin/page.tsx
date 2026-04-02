@@ -1,23 +1,17 @@
 import Link from "next/link";
 import {
-  deleteBeatAction,
-  deleteEducationAction,
-  deleteExperienceAction,
-  deleteProjectAction,
-  deleteServiceAction,
-  deleteSocialLinkAction,
   logoutAction,
   updateContactInfoAction,
   updateProfileAction,
-  upsertBeatAction,
-  upsertEducationAction,
-  upsertExperienceAction,
-  upsertProjectAction,
-  upsertServiceAction,
-  upsertSocialLinkAction,
 } from "./actions";
+import { BeatManager } from "./beat-manager";
 import { requireAdmin } from "@/lib/admin-auth";
 import { getPortfolioData, type PortfolioData } from "@/lib/portfolio";
+import { EducationManager } from "./education-manager";
+import { ExperienceManager } from "./experience-manager";
+import { ProjectManager } from "./project-manager";
+import { ServiceManager } from "./service-manager";
+import { SocialLinkManager } from "./social-link-manager";
 
 function AdminCard({
   title,
@@ -170,201 +164,27 @@ export default async function AdminPage() {
         </AdminCard>
 
         <AdminCard title="Services" description="Manage the service cards and their order.">
-          <div className="row g-4">
-            {profile.services.map((service: PortfolioData["services"][number]) => (
-              <div className="col-12" key={service.id}>
-                <form action={upsertServiceAction} className="admin-item-form row g-3 border border-light border-opacity-10 rounded-4 p-3">
-                  <HiddenIds id={service.id} profileId={profile.id} />
-                  <div className="col-md-3"><input className="form-control" name="title" defaultValue={service.title} placeholder="Title" required /></div>
-                  <div className="col-md-2"><input className="form-control" name="iconName" defaultValue={service.iconName ?? ""} placeholder="Icon class" /></div>
-                  <div className="col-md-2"><input className="form-control" type="number" name="sortOrder" defaultValue={service.sortOrder} placeholder="Order" /></div>
-                  <div className="col-md-5"><textarea className="form-control" name="description" rows={2} defaultValue={service.description} placeholder="Description" required /></div>
-                  <div className="col-12 d-flex justify-content-end gap-2">
-                    <button type="submit" className="btn btn-brand">Save</button>
-                    <button formAction={deleteServiceAction} className="btn btn-outline-danger">Delete</button>
-                  </div>
-                </form>
-              </div>
-            ))}
-            <div className="col-12">
-              <form action={upsertServiceAction} className="admin-item-form row g-3 border border-light border-opacity-10 rounded-4 p-3">
-                <HiddenIds profileId={profile.id} />
-                <div className="col-12"><h3 className="h5 mb-0">Add Service</h3></div>
-                <div className="col-md-3"><input className="form-control" name="title" placeholder="Title" required /></div>
-                <div className="col-md-2"><input className="form-control" name="iconName" placeholder="Icon class" /></div>
-                <div className="col-md-2"><input className="form-control" type="number" name="sortOrder" defaultValue={0} placeholder="Order" /></div>
-                <div className="col-md-5"><textarea className="form-control" name="description" rows={2} placeholder="Description" required /></div>
-                <div className="col-12 d-flex justify-content-end"><button type="submit" className="btn btn-brand">Add Service</button></div>
-              </form>
-            </div>
-          </div>
+          <ServiceManager profileId={profile.id} services={profile.services} />
         </AdminCard>
 
         <AdminCard title="Projects" description="Update the project cards shown in the work section.">
-          <div className="row g-4">
-            {profile.projects.map((project: PortfolioData["projects"][number]) => (
-              <div className="col-12" key={project.id}>
-                <form action={upsertProjectAction} className="admin-item-form row g-3 border border-light border-opacity-10 rounded-4 p-3" encType="multipart/form-data">
-                  <HiddenIds id={project.id} profileId={profile.id} />
-                  <div className="col-md-4"><input className="form-control" name="title" defaultValue={project.title} placeholder="Title" required /></div>
-                  <div className="col-md-2"><input className="form-control" type="number" name="sortOrder" defaultValue={project.sortOrder} placeholder="Order" /></div>
-                  <div className="col-md-6"><input className="form-control" name="liveUrl" defaultValue={project.liveUrl ?? ""} placeholder="Live URL" /></div>
-                  <div className="col-md-6"><input className="form-control" name="imageUrl" defaultValue={project.imageUrl ?? ""} placeholder="Image URL" /></div>
-                  <div className="col-md-6"><input className="form-control" type="file" name="imageFile" accept="image/*" /></div>
-                  <div className="col-12"><textarea className="form-control" name="description" rows={2} defaultValue={project.description} placeholder="Description" required /></div>
-                  <div className="col-12 d-flex justify-content-end gap-2">
-                    <button type="submit" className="btn btn-brand">Save</button>
-                    <button formAction={deleteProjectAction} className="btn btn-outline-danger">Delete</button>
-                  </div>
-                </form>
-              </div>
-            ))}
-            <div className="col-12">
-              <form action={upsertProjectAction} className="admin-item-form row g-3 border border-light border-opacity-10 rounded-4 p-3" encType="multipart/form-data">
-                <HiddenIds profileId={profile.id} />
-                <div className="col-12"><h3 className="h5 mb-0">Add Project</h3></div>
-                <div className="col-md-4"><input className="form-control" name="title" placeholder="Title" required /></div>
-                <div className="col-md-2"><input className="form-control" type="number" name="sortOrder" defaultValue={0} placeholder="Order" /></div>
-                <div className="col-md-6"><input className="form-control" name="liveUrl" placeholder="Live URL" /></div>
-                <div className="col-md-6"><input className="form-control" name="imageUrl" placeholder="Image URL" /></div>
-                <div className="col-md-6"><input className="form-control" type="file" name="imageFile" accept="image/*" /></div>
-                <div className="col-12"><textarea className="form-control" name="description" rows={2} placeholder="Description" required /></div>
-                <div className="col-12 d-flex justify-content-end"><button type="submit" className="btn btn-brand">Add Project</button></div>
-              </form>
-            </div>
-          </div>
+          <ProjectManager profileId={profile.id} projects={profile.projects} />
         </AdminCard>
 
         <AdminCard title="Beats" description="Manage the music items shown in the work section.">
-          <div className="row g-4">
-            {profile.beats.map((beat: PortfolioData["beats"][number]) => (
-              <div className="col-12" key={beat.id}>
-                <form action={upsertBeatAction} className="admin-item-form row g-3 border border-light border-opacity-10 rounded-4 p-3" encType="multipart/form-data">
-                  <HiddenIds id={beat.id} profileId={profile.id} />
-                  <div className="col-md-4"><input className="form-control" name="title" defaultValue={beat.title} placeholder="Title" required /></div>
-                  <div className="col-md-2"><input className="form-control" type="number" name="sortOrder" defaultValue={beat.sortOrder} placeholder="Order" /></div>
-                  <div className="col-md-3"><input className="form-control" name="coverImageUrl" defaultValue={beat.coverImageUrl ?? ""} placeholder="Cover image URL" /></div>
-                  <div className="col-md-3"><input className="form-control" name="audioUrl" defaultValue={beat.audioUrl ?? ""} placeholder="Audio URL" /></div>
-                  <div className="col-md-6"><input className="form-control" type="file" name="coverImageFile" accept="image/*" /></div>
-                  <div className="col-md-6"><input className="form-control" type="file" name="audioFile" accept="audio/*" /></div>
-                  <div className="col-12"><textarea className="form-control" name="description" rows={2} defaultValue={beat.description} placeholder="Description" required /></div>
-                  <div className="col-12 d-flex justify-content-end gap-2">
-                    <button type="submit" className="btn btn-brand">Save</button>
-                    <button formAction={deleteBeatAction} className="btn btn-outline-danger">Delete</button>
-                  </div>
-                </form>
-              </div>
-            ))}
-            <div className="col-12">
-              <form action={upsertBeatAction} className="admin-item-form row g-3 border border-light border-opacity-10 rounded-4 p-3" encType="multipart/form-data">
-                <HiddenIds profileId={profile.id} />
-                <div className="col-12"><h3 className="h5 mb-0">Add Beat</h3></div>
-                <div className="col-md-4"><input className="form-control" name="title" placeholder="Title" required /></div>
-                <div className="col-md-2"><input className="form-control" type="number" name="sortOrder" defaultValue={0} placeholder="Order" /></div>
-                <div className="col-md-3"><input className="form-control" name="coverImageUrl" placeholder="Cover image URL" /></div>
-                <div className="col-md-3"><input className="form-control" name="audioUrl" placeholder="Audio URL" /></div>
-                <div className="col-md-6"><input className="form-control" type="file" name="coverImageFile" accept="image/*" /></div>
-                <div className="col-md-6"><input className="form-control" type="file" name="audioFile" accept="audio/*" /></div>
-                <div className="col-12"><textarea className="form-control" name="description" rows={2} placeholder="Description" required /></div>
-                <div className="col-12 d-flex justify-content-end"><button type="submit" className="btn btn-brand">Add Beat</button></div>
-              </form>
-            </div>
-          </div>
+          <BeatManager profileId={profile.id} beats={profile.beats} />
         </AdminCard>
 
         <AdminCard title="Education" description="Manage education timeline entries.">
-          <div className="row g-4">
-            {profile.educations.map((education: PortfolioData["educations"][number]) => (
-              <div className="col-12" key={education.id}>
-                <form action={upsertEducationAction} className="admin-item-form row g-3 border border-light border-opacity-10 rounded-4 p-3">
-                  <HiddenIds id={education.id} profileId={profile.id} />
-                  <div className="col-md-4"><input className="form-control" name="degree" defaultValue={education.degree} placeholder="Degree" required /></div>
-                  <div className="col-md-4"><input className="form-control" name="institution" defaultValue={education.institution} placeholder="Institution" required /></div>
-                  <div className="col-md-2"><input className="form-control" name="period" defaultValue={education.period} placeholder="Period" required /></div>
-                  <div className="col-md-2"><input className="form-control" type="number" name="sortOrder" defaultValue={education.sortOrder} placeholder="Order" /></div>
-                  <div className="col-12"><textarea className="form-control" name="description" rows={2} defaultValue={education.description ?? ""} placeholder="Description" /></div>
-                  <div className="col-12 d-flex justify-content-end gap-2">
-                    <button type="submit" className="btn btn-brand">Save</button>
-                    <button formAction={deleteEducationAction} className="btn btn-outline-danger">Delete</button>
-                  </div>
-                </form>
-              </div>
-            ))}
-            <div className="col-12">
-              <form action={upsertEducationAction} className="admin-item-form row g-3 border border-light border-opacity-10 rounded-4 p-3">
-                <HiddenIds profileId={profile.id} />
-                <div className="col-12"><h3 className="h5 mb-0">Add Education</h3></div>
-                <div className="col-md-4"><input className="form-control" name="degree" placeholder="Degree" required /></div>
-                <div className="col-md-4"><input className="form-control" name="institution" placeholder="Institution" required /></div>
-                <div className="col-md-2"><input className="form-control" name="period" placeholder="Period" required /></div>
-                <div className="col-md-2"><input className="form-control" type="number" name="sortOrder" defaultValue={0} placeholder="Order" /></div>
-                <div className="col-12"><textarea className="form-control" name="description" rows={2} placeholder="Description" /></div>
-                <div className="col-12 d-flex justify-content-end"><button type="submit" className="btn btn-brand">Add Education</button></div>
-              </form>
-            </div>
-          </div>
+          <EducationManager profileId={profile.id} educations={profile.educations} />
         </AdminCard>
 
         <AdminCard title="Experience" description="Manage experience timeline entries.">
-          <div className="row g-4">
-            {profile.experiences.map((experience: PortfolioData["experiences"][number]) => (
-              <div className="col-12" key={experience.id}>
-                <form action={upsertExperienceAction} className="admin-item-form row g-3 border border-light border-opacity-10 rounded-4 p-3">
-                  <HiddenIds id={experience.id} profileId={profile.id} />
-                  <div className="col-md-4"><input className="form-control" name="role" defaultValue={experience.role} placeholder="Role" required /></div>
-                  <div className="col-md-4"><input className="form-control" name="company" defaultValue={experience.company} placeholder="Company" required /></div>
-                  <div className="col-md-2"><input className="form-control" name="period" defaultValue={experience.period} placeholder="Period" required /></div>
-                  <div className="col-md-2"><input className="form-control" type="number" name="sortOrder" defaultValue={experience.sortOrder} placeholder="Order" /></div>
-                  <div className="col-12"><textarea className="form-control" name="description" rows={2} defaultValue={experience.description ?? ""} placeholder="Description" /></div>
-                  <div className="col-12 d-flex justify-content-end gap-2">
-                    <button type="submit" className="btn btn-brand">Save</button>
-                    <button formAction={deleteExperienceAction} className="btn btn-outline-danger">Delete</button>
-                  </div>
-                </form>
-              </div>
-            ))}
-            <div className="col-12">
-              <form action={upsertExperienceAction} className="admin-item-form row g-3 border border-light border-opacity-10 rounded-4 p-3">
-                <HiddenIds profileId={profile.id} />
-                <div className="col-12"><h3 className="h5 mb-0">Add Experience</h3></div>
-                <div className="col-md-4"><input className="form-control" name="role" placeholder="Role" required /></div>
-                <div className="col-md-4"><input className="form-control" name="company" placeholder="Company" required /></div>
-                <div className="col-md-2"><input className="form-control" name="period" placeholder="Period" required /></div>
-                <div className="col-md-2"><input className="form-control" type="number" name="sortOrder" defaultValue={0} placeholder="Order" /></div>
-                <div className="col-12"><textarea className="form-control" name="description" rows={2} placeholder="Description" /></div>
-                <div className="col-12 d-flex justify-content-end"><button type="submit" className="btn btn-brand">Add Experience</button></div>
-              </form>
-            </div>
-          </div>
+          <ExperienceManager profileId={profile.id} experiences={profile.experiences} />
         </AdminCard>
 
         <AdminCard title="Social Links" description="Update footer social links.">
-          <div className="row g-4">
-            {profile.socialLinks.map((socialLink: PortfolioData["socialLinks"][number]) => (
-              <div className="col-12" key={socialLink.id}>
-                <form action={upsertSocialLinkAction} className="admin-item-form row g-3 border border-light border-opacity-10 rounded-4 p-3">
-                  <HiddenIds id={socialLink.id} profileId={profile.id} />
-                  <div className="col-md-4"><input className="form-control" name="platform" defaultValue={socialLink.platform} placeholder="Platform" required /></div>
-                  <div className="col-md-6"><input className="form-control" name="url" defaultValue={socialLink.url} placeholder="URL" required /></div>
-                  <div className="col-md-2"><input className="form-control" type="number" name="sortOrder" defaultValue={socialLink.sortOrder} placeholder="Order" /></div>
-                  <div className="col-12 d-flex justify-content-end gap-2">
-                    <button type="submit" className="btn btn-brand">Save</button>
-                    <button formAction={deleteSocialLinkAction} className="btn btn-outline-danger">Delete</button>
-                  </div>
-                </form>
-              </div>
-            ))}
-            <div className="col-12">
-              <form action={upsertSocialLinkAction} className="admin-item-form row g-3 border border-light border-opacity-10 rounded-4 p-3">
-                <HiddenIds profileId={profile.id} />
-                <div className="col-12"><h3 className="h5 mb-0">Add Social Link</h3></div>
-                <div className="col-md-4"><input className="form-control" name="platform" placeholder="Platform" required /></div>
-                <div className="col-md-6"><input className="form-control" name="url" placeholder="URL" required /></div>
-                <div className="col-md-2"><input className="form-control" type="number" name="sortOrder" defaultValue={0} placeholder="Order" /></div>
-                <div className="col-12 d-flex justify-content-end"><button type="submit" className="btn btn-brand">Add Social Link</button></div>
-              </form>
-            </div>
-          </div>
+          <SocialLinkManager profileId={profile.id} socialLinks={profile.socialLinks} />
         </AdminCard>
       </div>
     </main>
