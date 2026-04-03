@@ -111,9 +111,17 @@ export function LandingPortfolioCarousel({
     }
   };
 
+  const isInteractiveTarget = (target: EventTarget | null) => {
+    if (!(target instanceof Element)) {
+      return false;
+    }
+
+    return Boolean(target.closest("a, button, input, textarea, select, label"));
+  };
+
   const handlePointerDown = (event: PointerEvent<HTMLDivElement>) => {
     const container = carouselRef.current;
-    if (!container) {
+    if (!container || isInteractiveTarget(event.target)) {
       return;
     }
 
@@ -160,6 +168,9 @@ export function LandingPortfolioCarousel({
 
     container.classList.remove("is-dragging");
     dragStateRef.current.pointerId = -1;
+    window.setTimeout(() => {
+      dragStateRef.current.moved = false;
+    }, 0);
   };
 
   const handleLinkClick = (event: MouseEvent<HTMLAnchorElement>) => {
@@ -167,11 +178,7 @@ export function LandingPortfolioCarousel({
       event.preventDefault();
       event.stopPropagation();
       dragStateRef.current.moved = false;
-      return;
     }
-
-    event.preventDefault();
-    window.open(event.currentTarget.href, "_blank", "noopener,noreferrer");
   };
 
   return (
