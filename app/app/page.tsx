@@ -27,7 +27,7 @@ export default async function Home() {
         <div className="container">
           <div className="landing-topbar">
             <Link href="/" className="landing-logo">
-              PortfolioFlow
+              Portfolio Manager
             </Link>
             <div className="landing-auth-links">
               <Link href={topSecondaryHref} className="landing-auth-link">

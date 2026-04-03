@@ -16,8 +16,8 @@ export async function generateMetadata(): Promise<Metadata> {
   const displayName = profile?.fullName?.trim() || adminUser.email.split("@")[0] || "Portfolio Owner";
 
   return {
-    title: `${displayName} Admin`,
-    description: `Admin panel for ${displayName}'s portfolio`,
+    title: "Portfolio Manager",
+    description: `Portfolio Manager dashboard for ${displayName}`,
   };
 }
 

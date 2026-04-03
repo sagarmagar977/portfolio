@@ -9,8 +9,8 @@ const baiJamjuree = Bai_Jamjuree({
 });
 
 export const metadata: Metadata = {
-  title: "Sagar Thapa",
-  description: "Portfolio of Sagar Thapa",
+  title: "Portfolio Manager",
+  description: "Create and manage your portfolio from one dashboard.",
 };
 
 export default function RootLayout({
