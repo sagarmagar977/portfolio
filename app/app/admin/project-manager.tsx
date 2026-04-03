@@ -1,11 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import {
-  deleteProjectAction,
-  moveProjectAction,
-  upsertProjectAction,
-} from "./actions";
+import { deleteProjectAction, reorderProjectsAction, upsertProjectAction } from "./actions";
+import { AdminDragHandleButton } from "./admin-drag-handle-button";
+import { useAdminDragReorder } from "./use-admin-drag-reorder";
 import type { PortfolioData } from "@/lib/portfolio";
 
 type ProjectItem = PortfolioData["projects"][number];
@@ -20,24 +18,26 @@ type DraftState = {
   title: string;
   description: string;
   liveUrl: string;
-  imageUrl: string;
   sortOrder?: number;
 };
 
 export function ProjectManager({ profileId, projects }: ProjectManagerProps) {
-  const orderedProjects = useMemo(
+  const orderedProjectsFromProps = useMemo(
     () => [...projects].sort((a, b) => a.sortOrder - b.sortOrder),
     [projects],
   );
 
   const [draft, setDraft] = useState<DraftState | null>(null);
+  const { orderedItems: orderedProjects, draggedItemId, getRowDragProps, isSavingOrder } = useAdminDragReorder(
+    orderedProjectsFromProps,
+    reorderProjectsAction,
+  );
 
   const openAddModal = () => {
     setDraft({
       title: "",
       description: "",
       liveUrl: "",
-      imageUrl: "",
     });
   };
 
@@ -47,7 +47,6 @@ export function ProjectManager({ profileId, projects }: ProjectManagerProps) {
       title: project.title,
       description: project.description,
       liveUrl: project.liveUrl ?? "",
-      imageUrl: project.imageUrl ?? "",
       sortOrder: project.sortOrder,
     });
   };
@@ -66,16 +65,14 @@ export function ProjectManager({ profileId, projects }: ProjectManagerProps) {
               <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-3">
                 <div>
                   <h3 className="h4 mb-1">{draft.id ? "Edit Project" : "Add Project"}</h3>
-                  <p className="admin-muted mb-0">
-                    Update the project details, links, and image.
-                  </p>
+                  <p className="admin-muted mb-0">Update the project details, links, and image.</p>
                 </div>
                 <button type="button" className="btn btn-outline-light" onClick={closeModal}>
                   Close
                 </button>
               </div>
 
-              <form action={upsertProjectAction} className="row g-3" encType="multipart/form-data">
+              <form action={upsertProjectAction} className="row g-3">
                 {draft.id ? <input type="hidden" name="id" value={draft.id} /> : null}
                 <input type="hidden" name="profileId" value={profileId} />
                 <input type="hidden" name="sortOrder" value={draft.sortOrder ?? orderedProjects.length + 1} />
@@ -112,25 +109,6 @@ export function ProjectManager({ profileId, projects }: ProjectManagerProps) {
                           ? {
                               ...current,
                               liveUrl: event.target.value,
-                            }
-                          : current,
-                      )
-                    }
-                  />
-                </div>
-
-                <div className="col-md-6">
-                  <label className="form-label">Image URL</label>
-                  <input
-                    className="form-control"
-                    name="imageUrl"
-                    value={draft.imageUrl}
-                    onChange={(event) =>
-                      setDraft((current) =>
-                        current
-                          ? {
-                              ...current,
-                              imageUrl: event.target.value,
                             }
                           : current,
                       )
@@ -178,21 +156,25 @@ export function ProjectManager({ profileId, projects }: ProjectManagerProps) {
         </div>
       ) : null}
 
-      {orderedProjects.map((project, index) => (
+      {orderedProjects.map((project) => (
         <div className="col-12" key={project.id}>
-          <div className="admin-entity-row">
+          <div
+            className={[
+              "admin-entity-row",
+              "admin-entity-row-draggable",
+              draggedItemId === project.id ? "admin-entity-row-dragging" : "",
+              isSavingOrder ? "admin-entity-row-saving" : "",
+            ]
+              .filter(Boolean)
+              .join(" ")}
+            {...getRowDragProps(project.id)}
+          >
             <div className="admin-entity-summary">
               <div className="d-flex align-items-start gap-3 flex-wrap">
                 {project.imageUrl ? (
-                  <img
-                    src={project.imageUrl}
-                    alt={project.title}
-                    className="admin-project-thumb rounded-3"
-                  />
+                  <img src={project.imageUrl} alt={project.title} className="admin-project-thumb rounded-3" />
                 ) : (
-                  <div className="admin-project-thumb admin-project-thumb-empty rounded-3">
-                    No image
-                  </div>
+                  <div className="admin-project-thumb admin-project-thumb-empty rounded-3">No image</div>
                 )}
 
                 <div>
@@ -208,43 +190,15 @@ export function ProjectManager({ profileId, projects }: ProjectManagerProps) {
             </div>
 
             <div className="admin-entity-actions">
-              <form action={moveProjectAction}>
-                <input type="hidden" name="id" value={project.id} />
-                <input type="hidden" name="direction" value="up" />
-                <button
-                  type="submit"
-                  className="btn btn-outline-light"
-                  disabled={index === 0}
-                  aria-label={`Move ${project.title} up`}
-                >
-                  Up
-                </button>
-              </form>
+              <AdminDragHandleButton label={project.title} disabled={isSavingOrder} />
 
-              <form action={moveProjectAction}>
-                <input type="hidden" name="id" value={project.id} />
-                <input type="hidden" name="direction" value="down" />
-                <button
-                  type="submit"
-                  className="btn btn-outline-light"
-                  disabled={index === orderedProjects.length - 1}
-                  aria-label={`Move ${project.title} down`}
-                >
-                  Down
-                </button>
-              </form>
-
-              <button
-                type="button"
-                className="btn btn-brand"
-                onClick={() => openEditModal(project)}
-              >
+              <button type="button" className="btn btn-brand" onClick={() => openEditModal(project)} disabled={isSavingOrder}>
                 Edit
               </button>
 
               <form action={deleteProjectAction}>
                 <input type="hidden" name="id" value={project.id} />
-                <button type="submit" className="btn btn-outline-danger">
+                <button type="submit" className="btn btn-outline-danger" disabled={isSavingOrder}>
                   Delete
                 </button>
               </form>
@@ -254,7 +208,7 @@ export function ProjectManager({ profileId, projects }: ProjectManagerProps) {
       ))}
 
       <div className="col-12">
-        <button type="button" className="btn btn-brand admin-add-button" onClick={openAddModal}>
+        <button type="button" className="btn btn-brand admin-add-button" onClick={openAddModal} disabled={isSavingOrder}>
           + Add Project
         </button>
       </div>

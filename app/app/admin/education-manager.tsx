@@ -1,11 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import {
-  deleteEducationAction,
-  moveEducationAction,
-  upsertEducationAction,
-} from "./actions";
+import { deleteEducationAction, reorderEducationsAction, upsertEducationAction } from "./actions";
+import { AdminDragHandleButton } from "./admin-drag-handle-button";
+import { useAdminDragReorder } from "./use-admin-drag-reorder";
 import type { PortfolioData } from "@/lib/portfolio";
 
 type EducationItem = PortfolioData["educations"][number];
@@ -25,12 +23,16 @@ type DraftState = {
 };
 
 export function EducationManager({ profileId, educations }: EducationManagerProps) {
-  const orderedEducations = useMemo(
+  const orderedEducationsFromProps = useMemo(
     () => [...educations].sort((a, b) => a.sortOrder - b.sortOrder),
     [educations],
   );
 
   const [draft, setDraft] = useState<DraftState | null>(null);
+  const { orderedItems: orderedEducations, draggedItemId, getRowDragProps, isSavingOrder } = useAdminDragReorder(
+    orderedEducationsFromProps,
+    reorderEducationsAction,
+  );
 
   const openAddModal = () => {
     setDraft({
@@ -66,9 +68,7 @@ export function EducationManager({ profileId, educations }: EducationManagerProp
               <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-3">
                 <div>
                   <h3 className="h4 mb-1">{draft.id ? "Edit Education" : "Add Education"}</h3>
-                  <p className="admin-muted mb-0">
-                    Update the education details shown on the portfolio.
-                  </p>
+                  <p className="admin-muted mb-0">Update the education details shown on the portfolio.</p>
                 </div>
                 <button type="button" className="btn btn-outline-light" onClick={closeModal}>
                   Close
@@ -174,56 +174,36 @@ export function EducationManager({ profileId, educations }: EducationManagerProp
         </div>
       ) : null}
 
-      {orderedEducations.map((education, index) => (
+      {orderedEducations.map((education) => (
         <div className="col-12" key={education.id}>
-          <div className="admin-entity-row">
+          <div
+            className={[
+              "admin-entity-row",
+              "admin-entity-row-draggable",
+              draggedItemId === education.id ? "admin-entity-row-dragging" : "",
+              isSavingOrder ? "admin-entity-row-saving" : "",
+            ]
+              .filter(Boolean)
+              .join(" ")}
+            {...getRowDragProps(education.id)}
+          >
             <div className="admin-entity-summary">
               <h3 className="h5 mb-1">{education.degree}</h3>
               <p className="mb-1">{education.institution}</p>
               <p className="mb-2 admin-muted">{education.period}</p>
-              {education.description ? (
-                <p className="mb-0 admin-entity-description">{education.description}</p>
-              ) : null}
+              {education.description ? <p className="mb-0 admin-entity-description">{education.description}</p> : null}
             </div>
 
             <div className="admin-entity-actions">
-              <form action={moveEducationAction}>
-                <input type="hidden" name="id" value={education.id} />
-                <input type="hidden" name="direction" value="up" />
-                <button
-                  type="submit"
-                  className="btn btn-outline-light"
-                  disabled={index === 0}
-                  aria-label={`Move ${education.degree} up`}
-                >
-                  Up
-                </button>
-              </form>
+              <AdminDragHandleButton label={education.degree} disabled={isSavingOrder} />
 
-              <form action={moveEducationAction}>
-                <input type="hidden" name="id" value={education.id} />
-                <input type="hidden" name="direction" value="down" />
-                <button
-                  type="submit"
-                  className="btn btn-outline-light"
-                  disabled={index === orderedEducations.length - 1}
-                  aria-label={`Move ${education.degree} down`}
-                >
-                  Down
-                </button>
-              </form>
-
-              <button
-                type="button"
-                className="btn btn-brand"
-                onClick={() => openEditModal(education)}
-              >
+              <button type="button" className="btn btn-brand" onClick={() => openEditModal(education)} disabled={isSavingOrder}>
                 Edit
               </button>
 
               <form action={deleteEducationAction}>
                 <input type="hidden" name="id" value={education.id} />
-                <button type="submit" className="btn btn-outline-danger">
+                <button type="submit" className="btn btn-outline-danger" disabled={isSavingOrder}>
                   Delete
                 </button>
               </form>
@@ -233,7 +213,7 @@ export function EducationManager({ profileId, educations }: EducationManagerProp
       ))}
 
       <div className="col-12">
-        <button type="button" className="btn btn-brand admin-add-button" onClick={openAddModal}>
+        <button type="button" className="btn btn-brand admin-add-button" onClick={openAddModal} disabled={isSavingOrder}>
           + Add Education
         </button>
       </div>

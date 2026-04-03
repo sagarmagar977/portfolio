@@ -10,6 +10,7 @@ model AdminUser {
   id           String   @id @default(cuid())
   email        String   @unique
   passwordHash String?
+  googleId     String?  @unique
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
   profile      Profile?
@@ -18,6 +19,9 @@ model AdminUser {
 model Profile {
   id                  String       @id @default(cuid())
   adminUserId         String       @unique
+  slug                String       @unique
+  templateKey         String       @default("classic")
+  roles               String[]     @default(["developer"])
   fullName            String
   heroTitlePrefix     String?
   heroHighlight       String?
@@ -27,7 +31,10 @@ model Profile {
   profileImageUrl     String?
   cvFileUrl           String?
   aboutSectionTitle   String?
-  footerCreditText    String?
+  isPublished         Boolean      @default(false)
+  publishedSlug       String?      @unique
+  publishedAt         DateTime?
+  publishedSnapshot   Json?
   createdAt           DateTime     @default(now())
   updatedAt           DateTime     @updatedAt
   adminUser           AdminUser    @relation(fields: [adminUserId], references: [id], onDelete: Cascade)
@@ -37,6 +44,10 @@ model Profile {
   educations          Education[]
   experiences         Experience[]
   socialLinks         SocialLink[]
+  businesses          Business[]
+  photoProjects       PhotoProject[]
+  motionProjects      MotionProject[]
+  artworks            Artwork[]
   contactInfo         ContactInfo?
 }
 
@@ -72,6 +83,65 @@ model Beat {
   description   String
   coverImageUrl String?
   audioUrl      String?
+  externalUrl   String?
+  sortOrder     Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  profile       Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+}
+
+model Business {
+  id           String   @id @default(cuid())
+  profileId    String
+  name         String
+  businessType String?
+  description  String
+  websiteUrl   String?
+  imageUrl     String?
+  sortOrder    Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  profile      Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+}
+
+model PhotoProject {
+  id          String   @id @default(cuid())
+  profileId   String
+  title       String
+  collection  String?
+  description String
+  imageUrl    String?
+  projectUrl  String?
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  profile     Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+}
+
+model MotionProject {
+  id              String   @id @default(cuid())
+  profileId       String
+  title           String
+  toolName        String?
+  description     String
+  previewImageUrl String?
+  previewGifUrl   String?
+  previewVideoUrl String?
+  projectUrl      String?
+  sortOrder       Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  profile         Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+}
+
+model Artwork {
+  id            String   @id @default(cuid())
+  profileId     String
+  title         String
+  medium        String?
+  description   String
+  imageUrl      String?
+  collectionUrl String?
   sortOrder     Int      @default(0)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt

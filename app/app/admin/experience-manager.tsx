@@ -1,11 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import {
-  deleteExperienceAction,
-  moveExperienceAction,
-  upsertExperienceAction,
-} from "./actions";
+import { deleteExperienceAction, reorderExperiencesAction, upsertExperienceAction } from "./actions";
+import { AdminDragHandleButton } from "./admin-drag-handle-button";
+import { useAdminDragReorder } from "./use-admin-drag-reorder";
 import type { PortfolioData } from "@/lib/portfolio";
 
 type ExperienceItem = PortfolioData["experiences"][number];
@@ -25,12 +23,16 @@ type DraftState = {
 };
 
 export function ExperienceManager({ profileId, experiences }: ExperienceManagerProps) {
-  const orderedExperiences = useMemo(
+  const orderedExperiencesFromProps = useMemo(
     () => [...experiences].sort((a, b) => a.sortOrder - b.sortOrder),
     [experiences],
   );
 
   const [draft, setDraft] = useState<DraftState | null>(null);
+  const { orderedItems: orderedExperiences, draggedItemId, getRowDragProps, isSavingOrder } = useAdminDragReorder(
+    orderedExperiencesFromProps,
+    reorderExperiencesAction,
+  );
 
   const openAddModal = () => {
     setDraft({ role: "", company: "", period: "", description: "" });
@@ -61,9 +63,7 @@ export function ExperienceManager({ profileId, experiences }: ExperienceManagerP
               <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-3">
                 <div>
                   <h3 className="h4 mb-1">{draft.id ? "Edit Experience" : "Add Experience"}</h3>
-                  <p className="admin-muted mb-0">
-                    Update the work experience details shown on the portfolio.
-                  </p>
+                  <p className="admin-muted mb-0">Update the work experience details shown on the portfolio.</p>
                 </div>
                 <button type="button" className="btn btn-outline-light" onClick={closeModal}>
                   Close
@@ -77,27 +77,31 @@ export function ExperienceManager({ profileId, experiences }: ExperienceManagerP
 
                 <div className="col-md-6">
                   <label className="form-label">Role</label>
-                  <input className="form-control" name="role" required value={draft.role} onChange={(event) => setDraft((current) => current ? { ...current, role: event.target.value } : current)} />
+                  <input className="form-control" name="role" required value={draft.role} onChange={(event) => setDraft((current) => (current ? { ...current, role: event.target.value } : current))} />
                 </div>
 
                 <div className="col-md-6">
                   <label className="form-label">Company</label>
-                  <input className="form-control" name="company" required value={draft.company} onChange={(event) => setDraft((current) => current ? { ...current, company: event.target.value } : current)} />
+                  <input className="form-control" name="company" required value={draft.company} onChange={(event) => setDraft((current) => (current ? { ...current, company: event.target.value } : current))} />
                 </div>
 
                 <div className="col-md-6">
                   <label className="form-label">Period</label>
-                  <input className="form-control" name="period" required value={draft.period} onChange={(event) => setDraft((current) => current ? { ...current, period: event.target.value } : current)} />
+                  <input className="form-control" name="period" required value={draft.period} onChange={(event) => setDraft((current) => (current ? { ...current, period: event.target.value } : current))} />
                 </div>
 
                 <div className="col-12">
                   <label className="form-label">Description</label>
-                  <textarea className="form-control" name="description" rows={4} value={draft.description} onChange={(event) => setDraft((current) => current ? { ...current, description: event.target.value } : current)} />
+                  <textarea className="form-control" name="description" rows={4} value={draft.description} onChange={(event) => setDraft((current) => (current ? { ...current, description: event.target.value } : current))} />
                 </div>
 
                 <div className="col-12 d-flex justify-content-end gap-2">
-                  <button type="button" className="btn btn-outline-light" onClick={closeModal}>Cancel</button>
-                  <button type="submit" className="btn btn-brand">Save</button>
+                  <button type="button" className="btn btn-outline-light" onClick={closeModal}>
+                    Cancel
+                  </button>
+                  <button type="submit" className="btn btn-brand">
+                    Save
+                  </button>
                 </div>
               </form>
             </div>
@@ -105,9 +109,19 @@ export function ExperienceManager({ profileId, experiences }: ExperienceManagerP
         </div>
       ) : null}
 
-      {orderedExperiences.map((experience, index) => (
+      {orderedExperiences.map((experience) => (
         <div className="col-12" key={experience.id}>
-          <div className="admin-entity-row">
+          <div
+            className={[
+              "admin-entity-row",
+              "admin-entity-row-draggable",
+              draggedItemId === experience.id ? "admin-entity-row-dragging" : "",
+              isSavingOrder ? "admin-entity-row-saving" : "",
+            ]
+              .filter(Boolean)
+              .join(" ")}
+            {...getRowDragProps(experience.id)}
+          >
             <div className="admin-entity-summary">
               <h3 className="h5 mb-1">{experience.role}</h3>
               <p className="mb-1">{experience.company}</p>
@@ -116,23 +130,17 @@ export function ExperienceManager({ profileId, experiences }: ExperienceManagerP
             </div>
 
             <div className="admin-entity-actions">
-              <form action={moveExperienceAction}>
-                <input type="hidden" name="id" value={experience.id} />
-                <input type="hidden" name="direction" value="up" />
-                <button type="submit" className="btn btn-outline-light" disabled={index === 0}>Up</button>
-              </form>
+              <AdminDragHandleButton label={experience.role} disabled={isSavingOrder} />
 
-              <form action={moveExperienceAction}>
-                <input type="hidden" name="id" value={experience.id} />
-                <input type="hidden" name="direction" value="down" />
-                <button type="submit" className="btn btn-outline-light" disabled={index === orderedExperiences.length - 1}>Down</button>
-              </form>
-
-              <button type="button" className="btn btn-brand" onClick={() => openEditModal(experience)}>Edit</button>
+              <button type="button" className="btn btn-brand" onClick={() => openEditModal(experience)} disabled={isSavingOrder}>
+                Edit
+              </button>
 
               <form action={deleteExperienceAction}>
                 <input type="hidden" name="id" value={experience.id} />
-                <button type="submit" className="btn btn-outline-danger">Delete</button>
+                <button type="submit" className="btn btn-outline-danger" disabled={isSavingOrder}>
+                  Delete
+                </button>
               </form>
             </div>
           </div>
@@ -140,7 +148,7 @@ export function ExperienceManager({ profileId, experiences }: ExperienceManagerP
       ))}
 
       <div className="col-12">
-        <button type="button" className="btn btn-brand admin-add-button" onClick={openAddModal}>
+        <button type="button" className="btn btn-brand admin-add-button" onClick={openAddModal} disabled={isSavingOrder}>
           + Add Experience
         </button>
       </div>

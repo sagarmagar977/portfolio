@@ -1,6 +1,12 @@
 import type { Metadata } from "next";
+import { Bai_Jamjuree } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
+
+const baiJamjuree = Bai_Jamjuree({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+});
 
 export const metadata: Metadata = {
   title: "Sagar Thapa",
@@ -17,10 +23,6 @@ export default function RootLayout({
       <head>
         <link
           rel="stylesheet"
-          href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
-        />
-        <link
-          rel="stylesheet"
           href="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.css"
         />
         <link
@@ -28,56 +30,12 @@ export default function RootLayout({
           href="https://cdn.jsdelivr.net/npm/line-awesome@1.3.0/dist/line-awesome/css/line-awesome.min.css"
         />
       </head>
-      <body tabIndex={0}>
+      <body className={baiJamjuree.className} tabIndex={0}>
         {children}
-        <Script
-          src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
-          strategy="afterInteractive"
-        />
         <Script
           src="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.js"
           strategy="afterInteractive"
         />
-        <Script id="bootstrap-scrollspy-init" strategy="afterInteractive">
-          {`
-            (function initPortfolioScrollSpy() {
-              function run() {
-                if (!window.bootstrap?.ScrollSpy) {
-                  window.setTimeout(run, 100);
-                  return;
-                }
-
-                const nav = document.querySelector("#navbarNav");
-
-                if (!nav) {
-                  return;
-                }
-
-                const existing = window.bootstrap.ScrollSpy.getInstance(document.body);
-
-                if (existing) {
-                  existing.refresh();
-                  return;
-                }
-
-                new window.bootstrap.ScrollSpy(document.body, {
-                  target: "#navbarNav",
-                  smoothScroll: true,
-                });
-              }
-
-              if (document.readyState === "complete" || document.readyState === "interactive") {
-                run();
-              } else {
-                window.addEventListener("DOMContentLoaded", run, { once: true });
-              }
-
-              window.addEventListener("load", function refreshScrollSpy() {
-                window.bootstrap?.ScrollSpy.getInstance(document.body)?.refresh();
-              }, { once: true });
-            })();
-          `}
-        </Script>
         <Script id="aos-init" strategy="afterInteractive">
           {`
             (function initPortfolioAos() {

@@ -20,6 +20,10 @@ async function main() {
   await prisma.socialLink.deleteMany();
   await prisma.contactInfo.deleteMany();
   await prisma.experience.deleteMany();
+  await prisma.artwork.deleteMany();
+  await prisma.motionProject.deleteMany();
+  await prisma.photoProject.deleteMany();
+  await prisma.business.deleteMany();
   await prisma.education.deleteMany();
   await prisma.beat.deleteMany();
   await prisma.project.deleteMany();
@@ -29,13 +33,18 @@ async function main() {
 
   const adminUser = await prisma.adminUser.create({
     data: {
-      email: "owner@portfolio.local",
+      email: "sagar@gmail.com",
+      passwordHash:
+        "scrypt:32768:8:1$seed-default-salt$e896149a816b19bf6f70765fa8f95e1ea164d5be3a094e93a8b3101907ecd410bcbc8d33035816e205e2500131e920130a8267b27302e674d9946b6a74a6a69f",
     },
   });
 
   const profile = await prisma.profile.create({
     data: {
       adminUserId: adminUser.id,
+      slug: "sagar-thapa",
+      templateKey: "classic",
+      roles: ["developer", "beatmaker", "business"],
       fullName: "Sagar Thapa",
       heroTitlePrefix: "I'M A",
       heroHighlight: "DJANGO DEVELOPER",
@@ -46,7 +55,6 @@ async function main() {
       profileImageUrl: "/assets/images/person.jpg",
       cvFileUrl: "/assets/cv/Sagar-Thapa's-CV.pdf",
       aboutSectionTitle: "My Education & Experiance",
-      footerCreditText: "Designed by",
     },
   });
 
@@ -130,6 +138,7 @@ async function main() {
         description: "Beat is in C minor scale and is of 75 BPM.",
         coverImageUrl: "/assets/beats/beat1.JPG",
         audioUrl: "/assets/beats/beat1.mp3",
+        externalUrl: "https://soundcloud.com/",
         sortOrder: 1,
       },
       {
@@ -138,9 +147,23 @@ async function main() {
         description: "Beat is in C# minor scale and is of 130 BPM.",
         coverImageUrl: "/assets/beats/beat2.JPG",
         audioUrl: "/assets/beats/beat2.mp3",
+        externalUrl: "https://www.youtube.com/",
         sortOrder: 2,
       },
     ],
+  });
+
+  await prisma.business.create({
+    data: {
+      profileId: profile.id,
+      name: "Combined Tech Studio",
+      businessType: "Creative Technology Venture",
+      description:
+        "A hybrid studio bringing together custom software builds, music production support, and brand-first digital experiences.",
+      websiteUrl: "https://example.com/",
+      imageUrl: "/assets/images/project-4.png",
+      sortOrder: 1,
+    },
   });
 
   await prisma.education.createMany({

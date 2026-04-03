@@ -1,6 +1,6 @@
 "use server";
 
-import { getPortfolioData } from "@/lib/portfolio";
+import { prisma } from "@/lib/prisma";
 import { buildContactEmailTemplate } from "@/lib/contact-email-template";
 import { sendMail } from "@/lib/mailer";
 import type { ContactFormState } from "./contact-form-state";
@@ -14,12 +14,13 @@ export async function submitContactFormAction(
   _prevState: ContactFormState,
   formData: FormData,
 ): Promise<ContactFormState> {
+  const profileId = getField(formData, "profileId");
   const senderName = getField(formData, "name");
   const senderEmail = getField(formData, "email");
   const subject = getField(formData, "subject");
   const message = getField(formData, "message");
 
-  if (!senderName || !senderEmail || !subject || !message) {
+  if (!profileId || !senderName || !senderEmail || !subject || !message) {
     return {
       status: "error",
       message: "Please fill in all contact form fields.",
@@ -36,7 +37,11 @@ export async function submitContactFormAction(
   }
 
   try {
-    const profile = await getPortfolioData();
+    const profile = await prisma.profile.findUnique({
+      where: { id: profileId },
+      include: { contactInfo: true },
+    });
+
     const receiverEmail = profile?.contactInfo?.email ?? process.env.CONTACT_TO_EMAIL ?? "";
     const receiverName =
       profile?.fullName ??
