@@ -1,3 +1,5 @@
+import { unstable_cache } from "next/cache";
+import { cache } from "react";
 import { prisma } from "@/lib/prisma";
 import {
   normalizePortfolioRoles,
@@ -161,6 +163,25 @@ export type PublicPortfolioListItem = {
   publishedAt: Date | null;
 };
 
+export type AdminPublishingSummary = {
+  latestChangedSectionLabel: string | null;
+  latestChangePublished: boolean;
+};
+
+type PublicPortfolioListRow = {
+  id: string;
+  slug: string | null;
+  fullName: string | null;
+  heroDescription: string | null;
+  location: string | null;
+  profileImageUrl: string | null;
+  roles: unknown;
+  projectCount: number | bigint | null;
+  serviceCount: number | bigint | null;
+  socialLinkCount: number | bigint | null;
+  publishedAt: Date | null;
+};
+
 const portfolioInclude = {
   services: { orderBy: { sortOrder: "asc" as const } },
   projects: { orderBy: { sortOrder: "asc" as const } },
@@ -274,6 +295,101 @@ function normalizePortfolioSnapshot(record: Record<string, unknown>): PortfolioD
   };
 }
 
+function toSafeCount(value: number | bigint | null | undefined) {
+  if (typeof value === "bigint") {
+    return Number(value);
+  }
+
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value;
+  }
+
+  return 0;
+}
+
+function createPublishedPortfolioCache(slug: string) {
+  return unstable_cache(
+    async () => {
+      const record = await prismaAny.profile.findUnique({
+        where: { publishedSlug: slug },
+        select: {
+          id: true,
+          adminUserId: true,
+          slug: true,
+          publishedSlug: true,
+          isPublished: true,
+          publishedAt: true,
+          publishedSnapshot: true,
+        },
+      });
+
+      if (!record || !record.isPublished) {
+        return null;
+      }
+
+      return normalizePortfolioSnapshot(record);
+    },
+    ["published-portfolio-by-slug", slug],
+    {
+      tags: ["public-portfolios", `portfolio:${slug}`],
+      revalidate: 300,
+    },
+  );
+}
+
+const getCachedPublishedPortfolioDataBySlug = cache((slug: string) => createPublishedPortfolioCache(slug));
+
+const getCachedPublicPortfolioList = unstable_cache(
+  async (limit: number) => {
+    const rows = await prisma.$queryRaw<PublicPortfolioListRow[]>`
+      SELECT
+        id,
+        "publishedSlug" AS slug,
+        "publishedSnapshot"->>'fullName' AS "fullName",
+        "publishedSnapshot"->>'heroDescription' AS "heroDescription",
+        "publishedSnapshot"->>'location' AS location,
+        "publishedSnapshot"->>'profileImageUrl' AS "profileImageUrl",
+        "publishedSnapshot"->'roles' AS roles,
+        jsonb_array_length(COALESCE("publishedSnapshot"->'projects', '[]'::jsonb)) AS "projectCount",
+        jsonb_array_length(COALESCE("publishedSnapshot"->'services', '[]'::jsonb)) AS "serviceCount",
+        jsonb_array_length(COALESCE("publishedSnapshot"->'socialLinks', '[]'::jsonb)) AS "socialLinkCount",
+        "publishedAt"
+      FROM "Profile"
+      WHERE
+        "isPublished" = true
+        AND "publishedSlug" IS NOT NULL
+        AND "publishedSnapshot" IS NOT NULL
+      ORDER BY "publishedAt" DESC NULLS LAST, "updatedAt" DESC
+      LIMIT ${limit}
+    `;
+
+    return rows.flatMap((row) => {
+      if (!row.slug) {
+        return [];
+      }
+
+      return [{
+        id: row.id,
+        slug: row.slug,
+        fullName: row.fullName ?? "",
+        heroDescription: row.heroDescription,
+        location: row.location,
+        profileImageUrl: row.profileImageUrl,
+        roles: normalizePortfolioRoles(Array.isArray(row.roles) ? row.roles : []) as PortfolioRole[],
+        projectCount: toSafeCount(row.projectCount),
+        serviceCount: toSafeCount(row.serviceCount),
+        socialLinkCount: toSafeCount(row.socialLinkCount),
+        publishedAt: row.publishedAt,
+      }];
+    });
+  },
+  ["public-portfolio-list"],
+  {
+    tags: ["public-portfolios"],
+    revalidate: 300,
+  },
+);
+
 export async function getPortfolioDataBySlug(slug: string): Promise<PortfolioData | null> {
   const record = await prismaAny.profile.findUnique({
     where: { slug },
@@ -296,66 +412,92 @@ export async function getPortfolioDataByAdminUserId(adminUserId: string): Promis
   return normalizeProfileRecord(record);
 }
 
-export async function getPublishedPortfolioDataBySlug(slug: string): Promise<PortfolioData | null> {
-  const record = await prismaAny.profile.findUnique({
-    where: { publishedSlug: slug },
+export async function getAdminPublishingSummaryByAdminUserId(
+  adminUserId: string,
+): Promise<AdminPublishingSummary | null> {
+  const profile = await prisma.profile.findUnique({
+    where: { adminUserId },
     select: {
       id: true,
-      adminUserId: true,
-      slug: true,
-      publishedSlug: true,
       isPublished: true,
       publishedAt: true,
-      publishedSnapshot: true,
+      updatedAt: true,
+      contactInfo: {
+        select: {
+          updatedAt: true,
+        },
+      },
     },
   });
 
-  if (!record || !record.isPublished) {
+  if (!profile) {
     return null;
   }
 
-  return normalizePortfolioSnapshot(record);
+  const [
+    latestService,
+    latestProject,
+    latestBeat,
+    latestBusiness,
+    latestPhotoProject,
+    latestMotionProject,
+    latestArtwork,
+    latestEducation,
+    latestExperience,
+    latestSocialLink,
+  ] = await Promise.all([
+    prisma.service.findFirst({ where: { profileId: profile.id }, orderBy: { updatedAt: "desc" }, select: { updatedAt: true } }),
+    prisma.project.findFirst({ where: { profileId: profile.id }, orderBy: { updatedAt: "desc" }, select: { updatedAt: true } }),
+    prisma.beat.findFirst({ where: { profileId: profile.id }, orderBy: { updatedAt: "desc" }, select: { updatedAt: true } }),
+    prisma.business.findFirst({ where: { profileId: profile.id }, orderBy: { updatedAt: "desc" }, select: { updatedAt: true } }),
+    prisma.photoProject.findFirst({ where: { profileId: profile.id }, orderBy: { updatedAt: "desc" }, select: { updatedAt: true } }),
+    prisma.motionProject.findFirst({ where: { profileId: profile.id }, orderBy: { updatedAt: "desc" }, select: { updatedAt: true } }),
+    prisma.artwork.findFirst({ where: { profileId: profile.id }, orderBy: { updatedAt: "desc" }, select: { updatedAt: true } }),
+    prisma.education.findFirst({ where: { profileId: profile.id }, orderBy: { updatedAt: "desc" }, select: { updatedAt: true } }),
+    prisma.experience.findFirst({ where: { profileId: profile.id }, orderBy: { updatedAt: "desc" }, select: { updatedAt: true } }),
+    prisma.socialLink.findFirst({ where: { profileId: profile.id }, orderBy: { updatedAt: "desc" }, select: { updatedAt: true } }),
+  ]);
+
+  const candidates = [
+    { label: "Profile", updatedAt: profile.updatedAt },
+    { label: "Contact", updatedAt: profile.contactInfo?.updatedAt ?? null },
+    { label: "Services", updatedAt: latestService?.updatedAt ?? null },
+    { label: "Projects", updatedAt: latestProject?.updatedAt ?? null },
+    { label: "Beats", updatedAt: latestBeat?.updatedAt ?? null },
+    { label: "Ventures", updatedAt: latestBusiness?.updatedAt ?? null },
+    { label: "Photography", updatedAt: latestPhotoProject?.updatedAt ?? null },
+    { label: "3D / Motion", updatedAt: latestMotionProject?.updatedAt ?? null },
+    { label: "Artworks", updatedAt: latestArtwork?.updatedAt ?? null },
+    { label: "Education", updatedAt: latestEducation?.updatedAt ?? null },
+    { label: "Experience", updatedAt: latestExperience?.updatedAt ?? null },
+    { label: "Social Links", updatedAt: latestSocialLink?.updatedAt ?? null },
+  ].filter((candidate): candidate is { label: string; updatedAt: Date } => candidate.updatedAt instanceof Date);
+
+  const latestCandidate = candidates.sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime())[0] ?? null;
+
+  if (!latestCandidate) {
+    return {
+      latestChangedSectionLabel: null,
+      latestChangePublished: profile.isPublished,
+    };
+  }
+
+  return {
+    latestChangedSectionLabel: latestCandidate.label,
+    latestChangePublished: Boolean(profile.isPublished && profile.publishedAt && latestCandidate.updatedAt <= profile.publishedAt),
+  };
+}
+
+export async function getPublishedPortfolioDataBySlug(slug: string): Promise<PortfolioData | null> {
+  return getCachedPublishedPortfolioDataBySlug(slug)();
 }
 
 export async function getPublicPortfolioList(limit = 9): Promise<PublicPortfolioListItem[]> {
-  const records = await prismaAny.profile.findMany({
-    where: { isPublished: true },
-    take: limit,
-    orderBy: [{ publishedAt: "desc" as const }, { updatedAt: "desc" as const }],
-    select: {
-      id: true,
-      publishedSlug: true,
-      isPublished: true,
-      publishedAt: true,
-      publishedSnapshot: true,
-    },
-  });
+  const safeLimit = Number.isFinite(limit) ? Math.max(0, Math.floor(limit)) : 9;
 
-  return records.flatMap((record) => {
-    const snapshot = normalizePortfolioSnapshot(record);
+  if (safeLimit === 0) {
+    return [];
+  }
 
-    if (!snapshot) {
-      return [];
-    }
-
-    const profile = record as {
-      id?: string;
-      publishedSlug?: string | null;
-      publishedAt?: Date | null;
-    };
-
-    return [{
-      id: profile.id ?? "",
-      slug: profile.publishedSlug ?? "",
-      fullName: snapshot.fullName,
-      heroDescription: snapshot.heroDescription,
-      location: snapshot.location,
-      profileImageUrl: snapshot.profileImageUrl,
-      roles: snapshot.roles,
-      projectCount: snapshot.projects.length,
-      serviceCount: snapshot.services.length,
-      socialLinkCount: snapshot.socialLinks.length,
-      publishedAt: profile.publishedAt ?? null,
-    }];
-  });
+  return getCachedPublicPortfolioList(safeLimit);
 }

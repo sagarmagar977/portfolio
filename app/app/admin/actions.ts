@@ -397,7 +397,7 @@ export async function publishPortfolioAction() {
 
   await ensurePublishedSlugAvailable(profile.id, draftProfile.slug);
 
-  await prisma.profile.update({
+  const publishedProfile = await prisma.profile.update({
     where: { id: profile.id },
     data: asPrismaPayload({
       isPublished: true,
@@ -405,7 +405,18 @@ export async function publishPortfolioAction() {
       publishedAt: new Date(),
       publishedSnapshot: buildPublishedPortfolioSnapshot(draftProfile),
     }),
+    select: {
+      updatedAt: true,
+    },
   });
+
+  // Keep publishedAt aligned with the actual row update time so the admin
+  // status reflects that the current saved draft has been published.
+  await prisma.$executeRaw`
+    UPDATE "Profile"
+    SET "publishedAt" = ${publishedProfile.updatedAt}
+    WHERE "id" = ${profile.id}
+  `;
 
   refreshPortfolio([profile.slug, profile.publishedSlug ?? "", draftProfile.slug]);
   redirect("/admin?saved=publish");

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { scrollToPortfolioSection } from "./portfolio-section-scroll";
 
 type PortfolioNavProps = {
   fullName: string;
@@ -30,6 +31,14 @@ export function PortfolioNav({ fullName, profileImageUrl, items, variant = "side
       window.removeEventListener("resize", closeMenu);
       window.removeEventListener("hashchange", closeMenu);
     };
+  }, []);
+
+  useEffect(() => {
+    if (!window.location.hash) {
+      return;
+    }
+
+    scrollToPortfolioSection(window.location.hash, "auto");
   }, []);
 
   useEffect(() => {
@@ -76,7 +85,12 @@ export function PortfolioNav({ fullName, profileImageUrl, items, variant = "side
             ? "flex min-w-0 items-center gap-3"
             : "min-w-0 lg:mx-auto lg:mb-8 lg:flex lg:w-full lg:flex-col lg:items-center"}
           href="#home"
-          onClick={() => setIsOpen(false)}
+          onClick={(event) => {
+            event.preventDefault();
+            setActiveHref("#home");
+            setIsOpen(false);
+            scrollToPortfolioSection("#home");
+          }}
         >
           <span className={`block text-2xl font-bold text-[var(--color-heading)]${variant === "topbar" ? "" : " lg:hidden"}`}>
             {fullName}
@@ -149,9 +163,11 @@ export function PortfolioNav({ fullName, profileImageUrl, items, variant = "side
                         : "text-white hover:text-[var(--color-brand)]"
                   }`}
                   href={item.href}
-                  onClick={() => {
+                  onClick={(event) => {
+                    event.preventDefault();
                     setActiveHref(item.href);
                     setIsOpen(false);
+                    scrollToPortfolioSection(item.href);
                   }}
                 >
                   {item.label}

@@ -1,7 +1,12 @@
 import type { Metadata } from "next";
 import { AdminPanelClient } from "./admin-panel-client";
 import { requireAdmin } from "@/lib/admin-auth";
-import { getPortfolioDataByAdminUserId, type PortfolioData } from "@/lib/portfolio";
+import {
+  getAdminPublishingSummaryByAdminUserId,
+  getPortfolioDataByAdminUserId,
+  type AdminPublishingSummary,
+  type PortfolioData,
+} from "@/lib/portfolio";
 
 type AdminPageProps = {
   searchParams: Promise<{
@@ -23,7 +28,10 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function AdminPage({ searchParams }: AdminPageProps) {
   const adminUser = await requireAdmin();
-  const profile: PortfolioData | null = await getPortfolioDataByAdminUserId(adminUser.id);
+  const [profile, publishingSummary]: [PortfolioData | null, AdminPublishingSummary | null] = await Promise.all([
+    getPortfolioDataByAdminUserId(adminUser.id),
+    getAdminPublishingSummaryByAdminUserId(adminUser.id),
+  ]);
   const params = await searchParams;
 
   if (!profile) {
@@ -42,6 +50,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
       adminEmail={adminUser.email}
       adminDisplayName={profile.fullName?.trim() || adminUser.email.split("@")[0] || "Portfolio Owner"}
       profile={profile}
+      publishingSummary={publishingSummary}
       error={params.error}
       saved={params.saved}
     />

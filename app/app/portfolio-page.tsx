@@ -1,6 +1,8 @@
 import { ContactForm } from "./contact-form";
 import { BeatAudioPlayer } from "./beat-audio-player";
 import { PortfolioNav } from "./portfolio-nav";
+import { PortfolioScrollControls } from "./portfolio-scroll-controls";
+import { PortfolioSectionSnapController } from "./portfolio-section-snap-controller";
 import type { PortfolioData } from "@/lib/portfolio";
 import { buildPortfolioPresentation } from "@/lib/portfolio-presenter";
 import { getSocialPlatformMeta } from "@/lib/social-links";
@@ -29,6 +31,7 @@ export function PortfolioPage({ profile }: { profile: PortfolioData }) {
 
 function ClassicPortfolioTemplate({ profile }: { profile: PortfolioData }) {
   const presentation = buildPortfolioPresentation(profile);
+  const sectionIds = presentation.navItems.map((item) => item.href.replace(/^#/, ""));
   const phoneHref = profile.contactInfo?.phone
     ? `tel:${profile.contactInfo.phone.replace(/\s+/g, "")}`
     : "#contact";
@@ -40,9 +43,10 @@ function ClassicPortfolioTemplate({ profile }: { profile: PortfolioData }) {
         profileImageUrl={profile.profileImageUrl}
         items={presentation.navItems}
       />
+      <PortfolioSectionSnapController sectionIds={sectionIds} />
 
-      <div id="content-wrapper">
-        <section id="home" className="full-height px-lg-5 px-4 pt-28 lg:pt-20">
+      <div id="content-wrapper" className="portfolio-scroll-shell">
+        <section id="home" className="full-height portfolio-snap-section px-lg-5 px-4 pt-28 lg:pt-20">
           <div className="container">
             <div className="row gy-5 align-items-center">
               <div className="col-12">
@@ -70,7 +74,7 @@ function ClassicPortfolioTemplate({ profile }: { profile: PortfolioData }) {
         </section>
 
         {presentation.showServices ? (
-          <section id="services" className="full-height px-lg-5 px-4">
+          <section id="services" className="full-height portfolio-snap-section px-lg-5 px-4">
             <div className="container">
               <SectionHeading eyebrow="SERVICES" title="Services That I Provide" />
               <div className="grid gap-6 md:grid-cols-3">
@@ -93,7 +97,7 @@ function ClassicPortfolioTemplate({ profile }: { profile: PortfolioData }) {
         <WorkSection profile={profile} />
 
         {profile.educations.length > 0 || profile.experiences.length > 0 ? (
-          <section id="about" className="full-height px-lg-5 px-4">
+          <section id="about" className="full-height portfolio-snap-section px-lg-5 px-4">
             <div className="container">
               <SectionHeading eyebrow="ABOUT" title={profile.aboutSectionTitle ?? "My Education & Experience"} />
 
@@ -138,6 +142,8 @@ function ClassicPortfolioTemplate({ profile }: { profile: PortfolioData }) {
                   <div className="w-full text-center">
                     <a
                       href={profile.cvFileUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
                       className="btn btn-brand"
                     >
                       Download My CV
@@ -152,6 +158,7 @@ function ClassicPortfolioTemplate({ profile }: { profile: PortfolioData }) {
         <ContactSection profile={profile} />
         <PortfolioFooter profile={profile} />
       </div>
+      <PortfolioScrollControls />
     </>
   );
 }
@@ -167,7 +174,7 @@ function WorkSection({ profile }: { profile: PortfolioData }) {
   const cardClassName = "overflow-hidden rounded-2xl bg-[var(--color-base)] shadow-[0_0_0_1px_rgba(255,255,255,0.04)] transition duration-500 hover:shadow-[-6px_6px_0_0_var(--color-brand)]";
 
   return (
-    <section id="work" className={sectionClassName}>
+    <section id="work" className={`${sectionClassName} portfolio-snap-section`}>
       <div className="container">
         <SectionHeading eyebrow="WORK" title="My Recent Projects" />
         <div className="space-y-8">
@@ -187,7 +194,7 @@ function WorkSection({ profile }: { profile: PortfolioData }) {
           ) : null}
 
           {presentation.showBeats ? (
-            <WorkGroup title="Music" description="Tracks, beat previews, cover art, and external listening links.">
+            <WorkGroup title="Music" description="">
               <div className={gridClassName}>
                 {profile.beats.map((beat: BeatItem, index: number) => (
                   <article key={beat.id} className={cardClassName} data-aos="fade-up" data-aos-delay={getStaggerDelay(index)}>
@@ -351,7 +358,7 @@ function MediaPreview({
 
 function ContactSection({ profile }: { profile: PortfolioData }) {
   return (
-    <section id="contact" className="full-height px-lg-5 px-4">
+    <section id="contact" className="full-height portfolio-snap-section px-lg-5 px-4">
       <div className="container">
         <div className="flex justify-center text-center">
           <div className="w-full max-w-3xl pb-4" data-aos="fade-up">

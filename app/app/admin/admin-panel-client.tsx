@@ -9,10 +9,11 @@ import {
   updateContactInfoAction,
 } from "./actions";
 import { AdminSaveNotice } from "./admin-save-notice";
+import { AdminSaveShortcuts } from "./admin-save-shortcuts";
 import { BeatManager } from "./beat-manager";
 import { BusinessManager } from "./business-manager";
 import { ProfileSettings } from "./profile-settings";
-import type { PortfolioData } from "@/lib/portfolio";
+import type { AdminPublishingSummary, PortfolioData } from "@/lib/portfolio";
 import { ArtworkManager } from "./artwork-manager";
 import { EducationManager } from "./education-manager";
 import { ExperienceManager } from "./experience-manager";
@@ -89,12 +90,14 @@ export function AdminPanelClient({
   adminEmail,
   adminDisplayName,
   profile,
+  publishingSummary,
   error,
   saved,
 }: {
   adminEmail: string;
   adminDisplayName: string;
   profile: PortfolioData;
+  publishingSummary: AdminPublishingSummary | null;
   error?: string;
   saved?: string;
 }) {
@@ -121,9 +124,16 @@ export function AdminPanelClient({
         timeStyle: "short",
       }).format(new Date(profile.publishedAt))
     : null;
+  const latestChangeLabel = publishingSummary?.latestChangedSectionLabel ?? "No saved changes yet";
+  const latestChangeStatus = profile.isPublished
+    ? publishingSummary?.latestChangePublished
+      ? "Changes published"
+      : "Not published"
+    : "Not published";
 
   return (
     <main className="admin-panel px-3 px-lg-4 py-5" style={{ backgroundColor: "var(--color-base2)", minHeight: "100vh" }}>
+      <AdminSaveShortcuts />
       <div className="container-xl">
         <div className="admin-intro d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 mb-4">
           <div>
@@ -155,7 +165,7 @@ export function AdminPanelClient({
 
         <AdminCard
           title="Publishing"
-          description="Save draft changes freely. Only the published snapshot is visible on the public site."
+          description={undefined}
         >
           <div className="admin-publish-card">
             <div className="admin-publish-status">
@@ -173,6 +183,14 @@ export function AdminPanelClient({
                     ? `Public URL: /u/${profile.publishedSlug}${publishedAtLabel ? ` • Last published ${publishedAtLabel}` : ""}`
                     : "You can keep editing and saving privately. Visitors will not see anything until you press Publish."}
                 </p>
+                <div className="admin-publish-meta">
+                  <p className="admin-muted mb-0">
+                    Latest changes: <span className="admin-publish-meta-value">{latestChangeLabel}</span>
+                  </p>
+                  <p className="admin-muted mb-0">
+                    Status: <span className="admin-publish-meta-value">{latestChangeStatus}</span>
+                  </p>
+                </div>
               </div>
             </div>
 

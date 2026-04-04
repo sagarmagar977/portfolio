@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Bai_Jamjuree } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
@@ -13,13 +13,18 @@ export const metadata: Metadata = {
   description: "Create and manage your portfolio from one dashboard.",
 };
 
+export const viewport: Viewport = {
+  themeColor: "#022a30",
+  colorScheme: "dark",
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" style={{ colorScheme: "dark" }}>
       <head>
         <link
           rel="stylesheet"

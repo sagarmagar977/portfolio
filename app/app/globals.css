@@ -320,10 +320,12 @@
   --color-brand2: #deff58;
   --sidbar-width: 240px;
   --font-base: "Bai Jamjuree";
+  color-scheme: dark;
 }
 
 html {
   scroll-behavior: smooth;
+  color-scheme: dark;
 }
 
 html,
@@ -340,11 +342,16 @@ body {
   background-color: var(--color-base2) !important;
   color: var(--color-body) !important;
   font-family: var(--font-base), sans-serif;
+  color-scheme: dark;
 }
 
 #content-wrapper {
   min-height: 100vh;
   background-color: var(--color-base2) !important;
+}
+
+.portfolio-snap-section {
+  scroll-margin-top: 6.5rem;
 }
 
 section,
@@ -418,9 +425,59 @@ audio {
   border-bottom: 2px solid rgba(255, 255, 255, 0.1);
 }
 
+.portfolio-back-to-top {
+  position: fixed;
+  right: 1.25rem;
+  bottom: 1.25rem;
+  z-index: 60;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3.4rem;
+  height: 3.4rem;
+  border: 1px solid rgba(224, 247, 128, 0.28);
+  border-radius: 999px;
+  background: rgba(3, 63, 71, 0.92);
+  color: var(--color-heading);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.28);
+  backdrop-filter: blur(10px);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(10px);
+  transition:
+    opacity 180ms ease,
+    transform 180ms ease,
+    border-color 180ms ease,
+    color 180ms ease,
+    background-color 180ms ease;
+}
+
+.portfolio-back-to-top:hover,
+.portfolio-back-to-top:focus-visible {
+  border-color: rgba(224, 247, 128, 0.56);
+  background: rgba(6, 73, 82, 0.96);
+  color: var(--color-brand);
+}
+
+.portfolio-back-to-top-visible {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
+.portfolio-back-to-top svg {
+  width: 1.3rem;
+  height: 1.3rem;
+  fill: currentColor;
+}
+
 @media (max-width: 991.98px) {
   #content-wrapper {
     padding-top: 84px;
+  }
+
+  .portfolio-snap-section {
+    scroll-margin-top: 6rem;
   }
 
   .full-height {
@@ -454,6 +511,10 @@ audio {
 @media (min-width: 992px) {
   #content-wrapper {
     padding-left: var(--sidbar-width);
+  }
+
+  .portfolio-scroll-shell {
+    overscroll-behavior-y: contain;
   }
 }
 
@@ -1096,6 +1157,17 @@ audio {
   gap: 1rem;
   flex: 1;
   min-width: 260px;
+}
+
+.admin-publish-meta {
+  display: grid;
+  gap: 0.2rem;
+  margin-top: 0.75rem;
+}
+
+.admin-publish-meta-value {
+  color: var(--color-heading);
+  font-weight: 700;
 }
 
 .admin-publish-badge {

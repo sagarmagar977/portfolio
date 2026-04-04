@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { updateSlugAction } from "./actions";
 import { normalizeSlug } from "@/lib/slug";
 
@@ -20,6 +20,13 @@ export function SlugSettings({
   const [lastCheckedSlug, setLastCheckedSlug] = useState(currentSlug);
   const immediateStatus: SlugStatus =
     !normalizedSlug ? "invalid" : normalizedSlug === currentSlug ? "idle" : asyncStatus;
+
+  useEffect(() => {
+    setSlug(currentSlug);
+    setAsyncStatus("idle");
+    setLastCheckedSlug(currentSlug);
+    setIsEditing(false);
+  }, [currentSlug]);
 
   async function handleCheck() {
     if (!normalizedSlug) {
