@@ -202,12 +202,17 @@ function refreshPortfolio(slugs: string[]) {
 
   revalidatePath("/");
   revalidatePath("/admin");
-  revalidateTag("public-portfolios");
+  revalidateTag("public-portfolios", "max");
 
   for (const slug of uniqueSlugs) {
-    revalidatePath(/u/);
-    revalidateTag(portfolio:);
+    revalidatePath(`/u/${slug}`);
+    revalidateTag(`portfolio:${slug}`, "max");
   }
+}
+
+function refreshPortfolioAndRedirect(slugs: string[], saved: string) {
+  refreshPortfolio(slugs);
+  redirect(`/admin?saved=${saved}`);
 }
 
 async function ensurePublishedSlugAvailable(profileId: string, publishedSlug: string) {
