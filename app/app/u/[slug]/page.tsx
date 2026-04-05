@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { PortfolioPage } from "@/app/portfolio-page";
 import { getPublishedPortfolioDataBySlug } from "@/lib/portfolio";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 300;
 
 type PortfolioRouteProps = {
   params: Promise<{
@@ -37,3 +37,4 @@ export default async function PublicPortfolioPage({ params }: PortfolioRouteProp
 
   return <PortfolioPage profile={profile} />;
 }
+

@@ -138,7 +138,7 @@ function ClassicPortfolioTemplate({ profile }: { profile: PortfolioData }) {
               </div>
 
               {profile.cvFileUrl ? (
-                <div className="mt-10 flex justify-center" data-aos="fade-up" data-aos-delay="600">
+                <div className="mt-10 flex justify-center" data-aos="fade-up" data-aos-offset="0" data-aos-delay="600">
                   <div className="w-full text-center">
                     <a
                       href={profile.cvFileUrl}

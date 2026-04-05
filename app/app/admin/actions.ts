@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
@@ -198,17 +198,16 @@ async function deleteStorageFileForDraftOnly(
 }
 
 function refreshPortfolio(slugs: string[]) {
+  const uniqueSlugs = [...new Set(slugs.filter(Boolean))];
+
   revalidatePath("/");
   revalidatePath("/admin");
+  revalidateTag("public-portfolios");
 
-  for (const slug of new Set(slugs.filter(Boolean))) {
-    revalidatePath(`/u/${slug}`);
+  for (const slug of uniqueSlugs) {
+    revalidatePath(/u/);
+    revalidateTag(portfolio:);
   }
-}
-
-function refreshPortfolioAndRedirect(slugs: string[], savedKey: string) {
-  refreshPortfolio(slugs);
-  redirect(`/admin?saved=${savedKey}`);
 }
 
 async function ensurePublishedSlugAvailable(profileId: string, publishedSlug: string) {
@@ -1721,3 +1720,5 @@ export async function moveSocialLinkAction(formData: FormData) {
 
   refreshPortfolio([profile.slug]);
 }
+
+

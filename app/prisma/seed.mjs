@@ -54,7 +54,7 @@ async function main() {
       location: "Kathmandu, Nepal",
       profileImageUrl: "/assets/images/person.jpg",
       cvFileUrl: "/assets/cv/Sagar-Thapa's-CV.pdf",
-      aboutSectionTitle: "My Education & Experiance",
+      aboutSectionTitle: "My Education & Experience",
     },
   });
 
